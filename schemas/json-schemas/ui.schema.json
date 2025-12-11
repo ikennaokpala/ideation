@@ -1,0 +1,552 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/ui.schema.json",
+  "title": "SPARC UI DSL Schema",
+  "description": "JSON Schema for SPARC v6.1 ui.yaml validation with code generation mapping",
+  "type": "object",
+  "required": ["meta", "components", "screens"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "meta": {
+      "$ref": "#/definitions/meta"
+    },
+    "tokens": {
+      "$ref": "#/definitions/tokens"
+    },
+    "layouts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/layout"
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/component"
+      }
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/screen"
+      }
+    },
+    "navigation": {
+      "$ref": "#/definitions/navigation"
+    },
+    "forms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/form"
+      }
+    },
+    "simulation": {
+      "$ref": "#/definitions/simulation"
+    }
+  },
+  "definitions": {
+    "meta": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "version": { "type": "string" },
+        "target": {
+          "type": "object",
+          "properties": {
+            "platform": {
+              "type": "string",
+              "enum": ["web", "mobile", "desktop", "cross-platform"]
+            },
+            "framework": {
+              "type": "string",
+              "enum": ["react", "vue", "svelte", "flutter", "react-native"]
+            }
+          }
+        },
+        "styling": {
+          "type": "object",
+          "properties": {
+            "system": {
+              "type": "string",
+              "enum": ["tailwind", "css-modules", "styled-components", "native"]
+            },
+            "theme_ref": { "type": "string" }
+          }
+        },
+        "conventions": {
+          "type": "object",
+          "properties": {
+            "component_naming": {
+              "type": "string",
+              "enum": ["PascalCase", "camelCase", "kebab-case"]
+            },
+            "file_naming": {
+              "type": "string",
+              "enum": ["PascalCase", "camelCase", "kebab-case"]
+            }
+          }
+        },
+        "_code_generation": {
+          "type": "object",
+          "description": "Maps UI DSL to generated code",
+          "properties": {
+            "react": {
+              "type": "object",
+              "properties": {
+                "component_template": {
+                  "type": "string",
+                  "description": "Template: export const {{name}}: React.FC<{{name}}Props> = ({...props}) => { return (...) }"
+                },
+                "props_interface": {
+                  "type": "string",
+                  "description": "Template: interface {{name}}Props { {{#each props}}{{name}}: {{type}};{{/each}} }"
+                },
+                "state_hook": {
+                  "type": "string",
+                  "description": "Template: const [{{name}}, set{{Name}}] = useState<{{type}}>({{default}})"
+                },
+                "style_binding": {
+                  "type": "string",
+                  "description": "className={cn('{{base_styles}}', {{conditional_styles}})}"
+                }
+              }
+            },
+            "vue": {
+              "type": "object",
+              "properties": {
+                "component_template": {
+                  "type": "string",
+                  "description": "Template: <script setup lang='ts'>...</script><template>...</template>"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "colors": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "spacing": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "typography": {
+          "type": "object"
+        },
+        "breakpoints": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "shadows": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "radii": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "required": ["name", "structure"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "structure": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["flex", "grid", "stack"]
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["row", "column"]
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/layout_slot"
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout_slot": {
+      "type": "object",
+      "properties": {
+        "slot": { "type": "string" },
+        "width": { "type": "string" },
+        "height": { "type": "string" },
+        "flex": { "type": "integer" },
+        "sticky": { "type": "boolean" },
+        "scroll": { "type": "boolean" },
+        "optional": { "type": "boolean" },
+        "responsive": { "type": "object" },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/layout_slot"
+          }
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": ["name", "props"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$",
+          "description": "Component name in PascalCase"
+        },
+        "description": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["actions", "forms", "data-display", "feedback", "navigation", "layout", "typography"]
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/prop"
+          }
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "styles": {
+          "type": "object",
+          "properties": {
+            "base": { "type": "string" },
+            "variants": { "type": "object" },
+            "sizes": { "type": "object" }
+          }
+        },
+        "states": { "type": "object" },
+        "accessibility": {
+          "type": "object",
+          "properties": {
+            "role": { "type": "string" },
+            "aria_disabled": { "type": "string" },
+            "aria_busy": { "type": "string" },
+            "aria_invalid": { "type": "string" },
+            "aria_describedby": { "type": "string" }
+          }
+        },
+        "structure": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/element"
+          }
+        },
+        "data_binding": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": ["api", "local", "context"]
+            },
+            "endpoint_ref": { "type": "string" },
+            "auto_fetch": { "type": "boolean" },
+            "refetch_on": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "props": { "type": "object" },
+              "slot": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "prop": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "enum", "array", "object", "function", "icon", "component"]
+        },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "items": { "type": "object" },
+        "properties": { "type": "object" },
+        "default": {},
+        "required": { "type": "boolean" },
+        "optional": { "type": "boolean" },
+        "description": { "type": "string" }
+      }
+    },
+    "element": {
+      "type": "object",
+      "properties": {
+        "element": { "type": "string" },
+        "class": { "type": "string" },
+        "condition": { "type": "string" },
+        "content": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/element"
+          }
+        }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "required": ["name", "route"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z0-9]*Screen$",
+          "description": "Screen name ending with 'Screen'"
+        },
+        "route": {
+          "type": "string",
+          "pattern": "^/.*$",
+          "description": "Route path starting with /"
+        },
+        "layout": { "type": "string" },
+        "title": { "type": "string" },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "required": { "type": "boolean" },
+            "roles": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "redirect_if_authenticated": { "type": "string" }
+          }
+        },
+        "state": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "default": {}
+            }
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "source": { "type": "string" },
+              "endpoint_ref": { "type": "string" },
+              "params": { "type": "object" },
+              "auto_fetch": { "type": "boolean" }
+            }
+          }
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/content_item"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "trigger": { "type": "string" },
+              "logic_ref": { "type": "string" },
+              "params": { "type": "object" }
+            }
+          }
+        }
+      }
+    },
+    "content_item": {
+      "type": "object",
+      "properties": {
+        "slot": { "type": "string" },
+        "component": { "type": "string" },
+        "props": { "type": "object" },
+        "content": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/content_item"
+          }
+        }
+      }
+    },
+    "navigation": {
+      "type": "object",
+      "properties": {
+        "sidebar": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/nav_item"
+          }
+        },
+        "header": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/nav_item"
+          }
+        }
+      }
+    },
+    "nav_item": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "icon": { "type": "string" },
+        "route": { "type": "string" },
+        "badge": { "type": "object" },
+        "divider": { "type": "boolean" },
+        "slot": { "type": "string" },
+        "component": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/nav_item"
+          }
+        }
+      }
+    },
+    "form": {
+      "type": "object",
+      "required": ["name", "steps"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "title": { "type": "string" },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/form_field"
+                }
+              }
+            }
+          }
+        },
+        "validation_ref": { "type": "string" },
+        "submit_action": { "type": "string" }
+      }
+    },
+    "form_field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["text", "email", "password", "number", "tel", "url", "search", "textarea", "select", "multi-select", "radio", "checkbox", "date", "datetime", "time", "file", "rich-text"]
+        },
+        "label": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "options": { "type": "array" },
+        "options_ref": { "type": "string" },
+        "data_source": { "type": "string" },
+        "condition": { "type": "string" },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "required": { "type": "boolean" },
+            "min_length": { "type": "integer" },
+            "max_length": { "type": "integer" },
+            "pattern": { "type": "string" },
+            "custom": { "type": "string" }
+          }
+        }
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "output": { "type": "string" },
+              "styles": { "type": "string" },
+              "mock_data": { "type": "boolean" },
+              "mock_actions": { "type": "boolean" }
+            }
+          }
+        },
+        "responsive_testing": {
+          "type": "object",
+          "properties": {
+            "viewports": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "width": { "type": "integer" },
+                  "height": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "accessibility_testing": {
+          "type": "object",
+          "properties": {
+            "wcag_level": {
+              "type": "string",
+              "enum": ["A", "AA", "AAA"]
+            },
+            "checks": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

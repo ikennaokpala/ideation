@@ -1,0 +1,378 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/auth.schema.json",
+  "title": "SPARC Auth Schema",
+  "description": "JSON Schema for SPARC v6.1 auth.yaml validation (passwordless authentication)",
+  "type": "object",
+  "required": ["authentication", "tokens"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "extends": {
+      "type": ["string", "null"]
+    },
+    "_meta": {
+      "$ref": "#/definitions/meta"
+    },
+    "_redirect": {
+      "$ref": "#/definitions/redirect"
+    },
+    "authentication": {
+      "$ref": "#/definitions/authentication"
+    },
+    "tokens": {
+      "$ref": "#/definitions/tokens"
+    },
+    "sessions": {
+      "$ref": "#/definitions/sessions"
+    },
+    "database": {
+      "$ref": "#/definitions/database"
+    },
+    "routes": {
+      "$ref": "#/definitions/routes"
+    },
+    "middleware": {
+      "$ref": "#/definitions/middleware"
+    },
+    "platform": {
+      "$ref": "#/definitions/platform"
+    }
+  },
+  "definitions": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "related_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "code_generation": {
+          "type": "object",
+          "properties": {
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "language": { "type": "string" },
+                  "output": { "type": "string" },
+                  "files": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "redirect": {
+      "type": "object",
+      "properties": {
+        "canonical_file": { "type": "string" },
+        "reason": { "type": "string" },
+        "migration_date": { "type": "string", "format": "date" }
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "required": ["passwordless_only", "methods"],
+      "properties": {
+        "passwordless_only": {
+          "type": "boolean",
+          "const": true,
+          "description": "Must be true - SPARC enforces passwordless authentication"
+        },
+        "methods": {
+          "type": "object",
+          "properties": {
+            "email_otp": {
+              "$ref": "#/definitions/otp_method"
+            },
+            "sms_otp": {
+              "$ref": "#/definitions/otp_method"
+            },
+            "social": {
+              "$ref": "#/definitions/social_auth"
+            }
+          }
+        }
+      }
+    },
+    "otp_method": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "primary": { "type": "boolean" },
+        "config": {
+          "type": "object",
+          "properties": {
+            "code_length": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 8
+            },
+            "code_type": {
+              "type": "string",
+              "enum": ["numeric", "alphanumeric"]
+            },
+            "ttl_seconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 3600
+            },
+            "max_attempts": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "lockout_seconds": {
+              "type": "integer",
+              "minimum": 60
+            }
+          }
+        },
+        "rate_limits": {
+          "type": "object",
+          "properties": {
+            "per_identifier": {
+              "$ref": "#/definitions/rate_limit"
+            },
+            "per_ip": {
+              "$ref": "#/definitions/rate_limit"
+            }
+          }
+        },
+        "delivery": {
+          "type": "object",
+          "properties": {
+            "provider": { "type": "string" },
+            "template": { "type": "object" }
+          }
+        }
+      }
+    },
+    "rate_limit": {
+      "type": "object",
+      "properties": {
+        "max_requests": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "window_seconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "social_auth": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "providers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "client_id": { "type": "string" },
+              "client_secret": { "type": "string" },
+              "scopes": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "state_ttl_seconds": { "type": "integer" },
+            "pkce_enabled": { "type": "boolean" },
+            "pkce_method": {
+              "type": "string",
+              "enum": ["S256", "plain"]
+            }
+          }
+        }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "type": "object",
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"]
+            },
+            "issuer": { "type": "string" },
+            "audience": { "type": "string" },
+            "keys": { "type": "object" }
+          }
+        },
+        "access_token": {
+          "type": "object",
+          "properties": {
+            "ttl_seconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 86400
+            },
+            "claims": { "type": "object" }
+          }
+        },
+        "refresh_token": {
+          "type": "object",
+          "properties": {
+            "ttl_seconds": { "type": "integer" },
+            "rotation": { "type": "boolean" },
+            "storage": {
+              "type": "string",
+              "enum": ["database", "redis"]
+            }
+          }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "properties": {
+        "store": {
+          "type": "string",
+          "enum": ["redis", "database", "memory"]
+        },
+        "prefix": { "type": "string" },
+        "config": { "type": "object" },
+        "data": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "concurrent_sessions": {
+          "type": ["string", "integer"]
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "properties": {
+        "tables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/table"
+          }
+        }
+      }
+    },
+    "table": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/column"
+          }
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/index"
+          }
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "primary": { "type": "boolean" },
+        "unique": { "type": "boolean" },
+        "nullable": { "type": "boolean" },
+        "default": { "type": "string" },
+        "references": { "type": "string" },
+        "on_delete": { "type": "string" },
+        "check": { "type": "string" },
+        "comment": { "type": "string" }
+      }
+    },
+    "index": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "unique": { "type": "boolean" },
+        "where": { "type": "string" },
+        "comment": { "type": "string" }
+      }
+    },
+    "routes": {
+      "type": "object",
+      "properties": {
+        "prefix": { "type": "string" },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/endpoint"
+          }
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "required": ["path", "method", "handler"],
+      "properties": {
+        "path": { "type": "string" },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "handler": { "type": "string" },
+        "auth": { "type": ["boolean", "string"] },
+        "rate_limit": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "middleware": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "config": { "type": "object" },
+          "extracts": { "type": "array" },
+          "configs": { "type": "object" }
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "key_distribution": { "type": "object" },
+        "internal_api": { "type": "object" },
+        "service_auth": { "type": "object" }
+      }
+    }
+  }
+}

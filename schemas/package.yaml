@@ -11,8 +11,8 @@
 # - DSLs enable autonomous implementation
 # - API integration tests verify everything
 
-$schema: "https://sparc-dsl.dev/schemas/package.yaml.json"
-version: "6.1"
+$schema: "./json-schemas/package.schema.json"
+version: "6.1.1"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # METADATA
@@ -22,10 +22,10 @@ meta:
   name: ""                    # Project name
   description: ""
   version: "0.1.0"
-  
+
   generated_at: ""
   generator: "sparc-meta-prompt-v6.1"
-  
+
   idea:
     name: ""
     tagline: ""
@@ -34,23 +34,163 @@ meta:
     primary_kpi: ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT COMPLEXITY DETECTION
+# Automatically determines if SPARC Lite or Full mode is appropriate
+# ═══════════════════════════════════════════════════════════════════════════════
+
+complexity:
+
+  mode: ""                    # "lite" | "standard" | "enterprise"
+  auto_detected: true
+
+  # Lite mode indicators (if 3+ match, suggest lite mode)
+  lite_indicators:
+    - "Single CRUD resource"
+    - "No authentication required"
+    - "Single user type"
+    - "No external integrations"
+    - "Single database table"
+    - "< 5 API endpoints"
+    - "No background jobs"
+    - "No real-time features"
+
+  # Standard mode indicators (default)
+  standard_indicators:
+    - "Multiple CRUD resources"
+    - "Authentication required"
+    - "2-3 user roles"
+    - "1-3 external integrations"
+    - "5-20 API endpoints"
+    - "Background job processing"
+    - "Basic real-time features"
+
+  # Enterprise/Platform indicators
+  enterprise_indicators:
+    - "Multiple bounded contexts"
+    - "Marketplace dynamics"
+    - "White-label requirements"
+    - "Multi-tenant architecture"
+    - "Complex permission models"
+    - "Event-driven architecture"
+    - "> 20 API endpoints"
+    - "Multiple deployment targets"
+
+  # Override auto-detection
+  override:
+    enabled: false
+    reason: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SPARC LITE MODE
+# Simplified specification for small projects
+# ═══════════════════════════════════════════════════════════════════════════════
+
+lite_mode:
+
+  description: |
+    SPARC Lite is a streamlined version for simple projects that don't need
+    the full competitor analysis and exhaustive path coverage. Use when:
+    - Building a quick prototype or MVP
+    - Simple CRUD application
+    - Internal tool with limited users
+    - Learning project or tutorial
+
+  enabled: false
+
+  # Lite mode skips these phases
+  skipped_phases:
+    - "business_competitor_analysis"
+    - "software_competitor_analysis"
+    - "platform_detection"
+    - "white_label_configuration"
+
+  # Lite mode uses simplified files
+  simplified_files:
+    - name: "spec.yaml"
+      description: "Single combined specification file"
+      replaces:
+        - "business/ideal/business-ideal.yaml"
+        - "software/ideal/software-ideal.yaml"
+
+    - name: "schema.yaml"
+      description: "Combined data + API schema"
+      replaces:
+        - "dsl/data.yaml"
+        - "dsl/api.yaml"
+
+  # Lite mode directory structure
+  structure:
+    root: "./"
+    directories:
+      - "spec/"                 # Single spec.yaml
+      - "src/"                  # Source code
+      - "tests/"                # Test files
+
+  # Lite mode validation (relaxed)
+  validation:
+    - "spec.yaml exists and is valid"
+    - "At least one entity defined"
+    - "At least one endpoint defined"
+    - "Basic happy path tests exist"
+
+  # Example lite spec
+  example: |
+    # spec.yaml - SPARC Lite combined specification
+    meta:
+      name: "Todo App"
+      description: "Simple todo list application"
+
+    entities:
+      - name: "Todo"
+        fields:
+          - name: id
+            type: uuid
+            primary: true
+          - name: title
+            type: string
+            required: true
+          - name: completed
+            type: boolean
+            default: false
+
+    endpoints:
+      - path: "/todos"
+        method: GET
+        handler: "todos.list"
+      - path: "/todos"
+        method: POST
+        handler: "todos.create"
+      - path: "/todos/:id"
+        method: PATCH
+        handler: "todos.update"
+      - path: "/todos/:id"
+        method: DELETE
+        handler: "todos.delete"
+
+    tests:
+      - name: "Can create todo"
+        endpoint: "POST /todos"
+        body: { title: "Test todo" }
+        expect: { status: 201 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # ARCHITECTURE DECISION
 # Platform vs Single SaaS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 architecture:
-  
+
   type: ""                    # "platform" | "single_saas"
   confidence: ""              # "high" | "medium" | "low"
   rationale: ""
-  
+
   # If platform
   platform_config:
     bounded_contexts: []
     shared_services: []
     unified_auth: true
     repository_per_context: true
-    
+
   # Always
   white_label:
     enabled: true
@@ -66,67 +206,70 @@ architecture:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 contents:
-  
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Architecture Layer
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   architecture:
     description: "Platform/architecture decisions"
-    
+    skip_if: "complexity.mode == 'lite'"
+
     platform_decision:
       file: "architecture/platform-decision.yaml"
       description: "Analysis of whether this is a platform or single SaaS"
-      
+
     platform_architecture:
       file: "architecture/platform-architecture.yaml"
       schema: "schemas/platform-architecture.yaml"
       description: "Bounded contexts, unified auth, repository structure"
       condition: "Only if type == platform"
-      
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Business Layer
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   business:
     description: "Market and business strategy analysis"
-    
+    skip_if: "complexity.mode == 'lite'"
+
     competitors:
       directory: "business/competitors/"
       count: "5-8"
       files: []
       schema: "schemas/business-competitor.yaml"
-      
+
     ideal:
       file: "business/ideal/business-ideal.yaml"
       schema: "schemas/business-ideal.yaml"
       description: "Optimal business strategy synthesized from competitor analysis"
-      
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Software Layer
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   software:
     description: "Product and technical analysis"
-    
+    skip_if: "complexity.mode == 'lite'"
+
     competitors:
       directory: "software/competitors/"
       count: "5-8"
       files: []
       schema: "schemas/software-competitor.yaml"
-      
+
     ideal:
       file: "software/ideal/software-ideal.yaml"
       schema: "schemas/software-ideal.yaml"
       description: "Complete software specification with exhaustive cyclomatic paths"
-      
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Executable DSLs
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   dsl:
     description: "Machine-readable specifications for code generation"
-    
+
     data:
       file: "dsl/data.yaml"
       schema: "schemas/data.yaml"
@@ -135,7 +278,7 @@ contents:
         - "ORM models (Prisma/Drizzle)"
         - "Seed data"
         - "TypeScript types"
-        
+
     ui:
       file: "dsl/ui.yaml"
       schema: "schemas/ui.yaml"
@@ -144,7 +287,7 @@ contents:
         - "Screens and layouts"
         - "Storybook stories"
         - "Design tokens"
-        
+
     logic:
       file: "dsl/logic.yaml"
       schema: "schemas/logic.yaml"
@@ -153,7 +296,7 @@ contents:
         - "State machines (XState)"
         - "Validation schemas (Zod)"
         - "Workflow definitions"
-        
+
     api:
       file: "dsl/api.yaml"
       schema: "schemas/api.yaml"
@@ -162,7 +305,7 @@ contents:
         - "OpenAPI specification"
         - "Client SDKs"
         - "API documentation"
-        
+
     auth:
       file: "dsl/auth.yaml"
       schema: "schemas/auth.yaml"
@@ -171,7 +314,7 @@ contents:
         - "RBAC policies"
         - "OAuth configuration"
         - "Session management"
-        
+
     deploy:
       file: "dsl/deploy.yaml"
       schema: "schemas/deploy.yaml"
@@ -180,22 +323,22 @@ contents:
         - "Kubernetes manifests"
         - "GitHub Actions"
         - "Docker Compose"
-        
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Testing Layer
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   tests:
     description: "API integration test specifications"
-    
+
     spec:
       file: "tests/tests.yaml"
       schema: "schemas/tests.yaml"
-      
+
     factories:
       file: "tests/factories.yaml"
       description: "Test data factories"
-      
+
     mocks:
       directory: "tests/mocks/"
       description: "External service WebMock fixtures"
@@ -204,14 +347,14 @@ contents:
         - "email.yaml"
         - "sms.yaml"
         - "payment.yaml"
-        
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Simulation Layer
   # ─────────────────────────────────────────────────────────────────────────────
-  
+
   simulation:
     description: "Interactive exploration and validation"
-    
+
     modes:
       file: "simulation/modes.yaml"
       description: "Available simulation modes"
@@ -221,15 +364,16 @@ contents:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 testing_rules:
-  
+
   level:
     type: "api_integration_only"
     description: "All tests are HTTP-level integration tests. No unit tests."
-    
+
   coverage:
     type: "cyclomatic_path_complete"
     description: "Every PATH-*, EDGE-*, and boundary from software-ideal must have a test."
-    
+    lite_override: "Basic happy path coverage only"
+
   mocking:
     allowed:
       - "OAuth providers (Google, Apple, Facebook, GitHub, Microsoft)"
@@ -239,7 +383,7 @@ testing_rules:
       - "Push notification providers (Firebase, APNS)"
       - "External storage (S3, GCS) when accessed as external service"
       - "Any third-party API"
-      
+
     forbidden:
       - "Database connections - use real test database"
       - "Redis/cache - use real test cache"
@@ -248,12 +392,12 @@ testing_rules:
       - "Internal service calls - call actual implementation"
       - "ORM/query builders - never mock"
       - "Application logic - never mock"
-      
+
   data:
     strategy: "factories"
     fallback: "fixtures"
     description: "Use factories for dynamic test data. Fixtures only when factories impossible."
-    
+
   database:
     type: "real"
     isolation: "transaction_rollback"
@@ -264,85 +408,164 @@ testing_rules:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 cross_references:
-  
+
   architecture_refs:
     - from: "architecture/platform-architecture.yaml#/bounded_contexts"
       to: "Repository structure"
       relationship: "defines"
-      
+
     - from: "architecture/platform-architecture.yaml#/unified_auth"
       to: "dsl/auth.yaml"
       relationship: "configures"
-      
+
   business_to_software:
     - from: "business/ideal/business-ideal.yaml#/optimal_positioning"
       to: "software/ideal/software-ideal.yaml#/product_vision"
       relationship: "informs"
-      
+
   software_to_dsl:
     - from: "software/ideal/software-ideal.yaml#/feature_specifications"
       to: "dsl/logic.yaml#/workflows"
       relationship: "implements"
-      
+
   software_to_tests:
     - from: "software/ideal/software-ideal.yaml#/paths"
       to: "tests/tests.yaml#/test_suites"
       relationship: "generates"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# INTERPRETERS
+# INTERPRETERS (Code Generation Mapping)
+# How DSL files map to generated code
 # ═══════════════════════════════════════════════════════════════════════════════
 
 interpreters:
-  
+
+  _documentation: |
+    Interpreters define how each DSL file maps to generated code.
+
+    Generation Strategy:
+    1. Parse the DSL YAML file
+    2. Validate against JSON Schema
+    3. Transform to intermediate representation (IR)
+    4. Apply target-specific templates
+    5. Write output files
+
+    Template Variables:
+    - {{entity.name}} - Entity name in original case
+    - {{entity.name | pascal}} - PascalCase
+    - {{entity.name | snake}} - snake_case
+    - {{entity.name | kebab}} - kebab-case
+    - {{entity.fields}} - Array of field definitions
+    - {{entity.relations}} - Array of relation definitions
+
   data:
     - target: "drizzle"
       output: "src/db/schema.ts"
+      template: "templates/drizzle-schema.ts.hbs"
+      mapping:
+        entity: "table"
+        field: "column"
+        relation: "references"
+
+    - target: "prisma"
+      output: "prisma/schema.prisma"
+      template: "templates/prisma-schema.prisma.hbs"
+
     - target: "migrations"
       output: "migrations/*.sql"
-      
+      template: "templates/migration.sql.hbs"
+      naming: "{{timestamp}}_{{entity.name | snake}}.sql"
+
   ui:
     - target: "react"
       output: "src/components/**/*.tsx"
-      
+      template: "templates/react-component.tsx.hbs"
+      mapping:
+        component: "React.FC"
+        props: "interface {{name}}Props"
+        state: "useState"
+        styles: "className (Tailwind)"
+
+    - target: "vue"
+      output: "src/components/**/*.vue"
+      template: "templates/vue-component.vue.hbs"
+
+    - target: "storybook"
+      output: "src/stories/**/*.stories.tsx"
+      template: "templates/story.stories.tsx.hbs"
+
   logic:
     - target: "services"
       output: "src/services/**/*.ts"
+      template: "templates/service.ts.hbs"
+      mapping:
+        workflow: "class {{name}}Service"
+        step: "async {{name}}()"
+        validation: "zod schema"
+
     - target: "xstate"
       output: "src/machines/**/*.ts"
-      
+      template: "templates/xstate-machine.ts.hbs"
+      mapping:
+        state_machine: "createMachine"
+        state: "states.{{name}}"
+        transition: "on.{{event}}"
+
   api:
     - target: "hono"
       output: "src/routes/**/*.ts"
+      template: "templates/hono-route.ts.hbs"
+      mapping:
+        endpoint: "app.{{method}}('{{path}}')"
+        handler: "async (c) => {}"
+        middleware: "app.use()"
+
     - target: "axum"
       output: "src/routes/**/*.rs"
+      template: "templates/axum-route.rs.hbs"
+
     - target: "openapi"
       output: "openapi.yaml"
-      
+      template: "templates/openapi.yaml.hbs"
+
   auth:
     - target: "middleware"
       output: "src/middleware/auth.ts"
-      
+      template: "templates/auth-middleware.ts.hbs"
+
   deploy:
     - target: "terraform"
       output: "infra/terraform/**/*.tf"
+      template: "templates/terraform-*.tf.hbs"
+
     - target: "kubernetes"
       output: "infra/k8s/**/*.yaml"
+      template: "templates/k8s-*.yaml.hbs"
+
     - target: "docker-compose"
       output: "docker-compose.yaml"
-      
+      template: "templates/docker-compose.yaml.hbs"
+
   tests:
     - target: "rust"
       output: "tests/**/*_test.rs"
+      template: "templates/rust-test.rs.hbs"
+
     - target: "typescript"
       output: "tests/**/*.test.ts"
+      template: "templates/vitest-test.ts.hbs"
+      mapping:
+        test_suite: "describe('{{name}}')"
+        test_case: "it('{{name}}')"
+        setup: "beforeEach"
+        teardown: "afterEach"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIMULATION MODES
 # ═══════════════════════════════════════════════════════════════════════════════
 
 simulation:
-  
+
   business:
     - name: "competitive_landscape"
       command: "sparc sim business:landscape"
@@ -350,7 +573,7 @@ simulation:
       command: "sparc sim business:pricing"
     - name: "gtm_timeline"
       command: "sparc sim business:gtm"
-      
+
   software:
     - name: "feature_matrix"
       command: "sparc sim software:features"
@@ -358,7 +581,7 @@ simulation:
       command: "sparc sim software:paths"
     - name: "state_machines"
       command: "sparc sim software:states"
-      
+
   technical:
     - name: "mock_server"
       command: "sparc sim api:mock"
@@ -370,13 +593,13 @@ simulation:
       command: "sparc sim deploy:architecture"
     - name: "cost_estimation"
       command: "sparc sim deploy:cost"
-      
+
   platform:
     - name: "service_map"
       command: "sparc sim platform:services"
     - name: "auth_flows"
       command: "sparc sim platform:auth"
-      
+
   testing:
     - name: "coverage_report"
       command: "sparc sim tests:coverage"
@@ -386,7 +609,7 @@ simulation:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 structure:
-  
+
   single_saas:
     root: "./"
     directories:
@@ -402,7 +625,7 @@ structure:
       - "src/"
       - "tests/"
       - "infra/"
-      
+
   platform:
     organization: "{{platform}}"
     repositories:
@@ -424,35 +647,48 @@ structure:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 validation:
-  
+
+  # JSON Schema validation (runtime)
+  schema_validation:
+    enabled: true
+    schemas_dir: "schemas/json-schemas/"
+    on_error: "fail"           # "fail" | "warn" | "ignore"
+
   architecture:
     - "Platform decision made with rationale"
     - "If platform: bounded contexts defined"
     - "If platform: unified auth architecture specified"
     - "White-label configuration included"
-    
+
   business:
     - "At least 5 competitors analyzed"
     - "Business ideal synthesizes all competitors"
     - "Pricing strategy defined"
     - "Go-to-market strategy defined"
-    
+
   software:
     - "At least 5 competitors analyzed"
     - "Every feature has complete PATH-* coverage"
     - "Every feature has EDGE-* cases"
     - "Every feature has boundary conditions"
     - "Every stateful entity has state machine"
-    
+
   dsl:
     - "Every entity has primary key"
     - "Every screen has route"
     - "Every workflow has steps"
     - "Every endpoint has handler"
     - "Every role has permissions"
-    
+
   tests:
     - "Every PATH-* has corresponding test"
     - "Every EDGE-* has corresponding test"
     - "No mocks on database/filesystem"
     - "External services have mock fixtures"
+
+  # Lite mode validation (relaxed)
+  lite:
+    - "spec.yaml exists and is valid"
+    - "At least one entity defined"
+    - "At least one endpoint defined"
+    - "Basic happy path test exists"
