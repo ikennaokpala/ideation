@@ -1,0 +1,637 @@
+# SPARC Quick Start Template: SaaS Starter
+# Level 1 - Multi-tenant SaaS with auth, billing, teams
+# Run: sparc init --template saas_starter
+
+$schema: "../schemas/json-schemas/quick-start.schema.json"
+template: "saas_starter"
+version: "1.0"
+level: 1
+extends: "auth_api"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# META
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: "{{project_name}}"
+  description: "{{project_description}}"
+  version: "0.1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MULTI-TENANCY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+multi_tenancy:
+  enabled: true
+  strategy: "row_level_security"
+  tenant_column: "organization_id"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTITIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+entities:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ORGANIZATION / TENANT
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  - name: "Organization"
+    table: "organizations"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+        default: "gen_random_uuid()"
+
+      - name: name
+        type: varchar(255)
+        required: true
+
+      - name: slug
+        type: varchar(100)
+        unique: true
+        required: true
+
+      - name: billing_email
+        type: varchar(255)
+        required: true
+
+      - name: stripe_customer_id
+        type: varchar(255)
+        unique: true
+
+      - name: subscription_tier
+        type: varchar(20)
+        default: "free"
+        check: "subscription_tier IN ('free', 'starter', 'pro', 'enterprise')"
+
+      - name: subscription_status
+        type: varchar(20)
+        default: "active"
+
+      - name: trial_ends_at
+        type: timestamptz
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [slug]
+        unique: true
+      - columns: [stripe_customer_id]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # MEMBERSHIP (User <-> Organization)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  - name: "Membership"
+    table: "memberships"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+
+      - name: user_id
+        type: uuid
+        references: "users(id)"
+        on_delete: cascade
+
+      - name: organization_id
+        type: uuid
+        references: "organizations(id)"
+        on_delete: cascade
+
+      - name: role
+        type: varchar(20)
+        default: "member"
+        check: "role IN ('owner', 'admin', 'member', 'viewer')"
+
+      - name: invited_by
+        type: uuid
+        references: "users(id)"
+
+      - name: accepted_at
+        type: timestamptz
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [user_id, organization_id]
+        unique: true
+      - columns: [organization_id]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # INVITATION
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  - name: "Invitation"
+    table: "invitations"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+
+      - name: organization_id
+        type: uuid
+        references: "organizations(id)"
+        on_delete: cascade
+
+      - name: email
+        type: varchar(255)
+        required: true
+
+      - name: role
+        type: varchar(20)
+        default: "member"
+
+      - name: token
+        type: varchar(255)
+        unique: true
+
+      - name: invited_by
+        type: uuid
+        references: "users(id)"
+
+      - name: expires_at
+        type: timestamptz
+        required: true
+
+      - name: accepted_at
+        type: timestamptz
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [token]
+      - columns: [organization_id, email]
+        unique: true
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # USER (Extended from auth_api)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  - name: "User"
+    table: "users"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+
+      - name: email
+        type: varchar(255)
+        unique: true
+        required: true
+
+      - name: email_verified
+        type: boolean
+        default: false
+
+      - name: name
+        type: varchar(255)
+
+      - name: avatar_url
+        type: text
+
+      - name: default_organization_id
+        type: uuid
+        references: "organizations(id)"
+        comment: "User's currently selected organization"
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PRIMARY ENTITY (Tenant-scoped)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  - name: "{{primary_entity}}"
+    table: "{{primary_entity | snake_case | pluralize}}"
+    tenant_scoped: true
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+
+      - name: organization_id
+        type: uuid
+        references: "organizations(id)"
+        on_delete: cascade
+        required: true
+
+      - name: created_by
+        type: uuid
+        references: "users(id)"
+
+      - name: name
+        type: varchar(255)
+        required: true
+
+      - name: description
+        type: text
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [organization_id]
+
+    row_level_security:
+      enabled: true
+      policy: "organization_id = current_organization_id()"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BILLING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+billing:
+  provider: "stripe"
+
+  tiers:
+    - name: "free"
+      price_monthly: 0
+      limits:
+        members: 1
+        "{{primary_entity | pluralize}}": 10
+
+    - name: "starter"
+      price_monthly: 29
+      stripe_price_id: "{{STRIPE_STARTER_PRICE_ID}}"
+      limits:
+        members: 5
+        "{{primary_entity | pluralize}}": 100
+
+    - name: "pro"
+      price_monthly: 99
+      stripe_price_id: "{{STRIPE_PRO_PRICE_ID}}"
+      limits:
+        members: 20
+        "{{primary_entity | pluralize}}": 1000
+
+    - name: "enterprise"
+      price_monthly: "custom"
+      limits:
+        members: "unlimited"
+        "{{primary_entity | pluralize}}": "unlimited"
+
+  trial:
+    enabled: true
+    days: 14
+    tier: "pro"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RBAC (Role-Based Access Control)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+rbac:
+  roles:
+    - name: "owner"
+      description: "Full access, can delete organization"
+      permissions: ["*"]
+
+    - name: "admin"
+      description: "Manage members and settings"
+      permissions:
+        - "org:read"
+        - "org:update"
+        - "members:*"
+        - "invitations:*"
+        - "billing:read"
+        - "{{primary_entity | snake_case}}:*"
+
+    - name: "member"
+      description: "Create and manage own resources"
+      permissions:
+        - "org:read"
+        - "members:read"
+        - "{{primary_entity | snake_case}}:*"
+
+    - name: "viewer"
+      description: "Read-only access"
+      permissions:
+        - "org:read"
+        - "members:read"
+        - "{{primary_entity | snake_case}}:read"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+api:
+  version: "v1"
+  base_path: "/api/v1"
+
+  endpoints:
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # ORGANIZATION MANAGEMENT
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/organizations"
+      method: POST
+      handler: "organizations.create"
+      auth: true
+      permission: null
+      description: "Create new organization (any authenticated user)"
+      request:
+        body:
+          name:
+            type: string
+            required: true
+          slug:
+            type: string
+            required: true
+      response:
+        status: 201
+
+    - path: "/organizations/:slug"
+      method: GET
+      handler: "organizations.get"
+      auth: true
+      permission: "org:read"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug"
+      method: PATCH
+      handler: "organizations.update"
+      auth: true
+      permission: "org:update"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug"
+      method: DELETE
+      handler: "organizations.delete"
+      auth: true
+      permission: "owner"
+      description: "Only owner can delete"
+      response:
+        status: 204
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # MEMBER MANAGEMENT
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/organizations/:slug/members"
+      method: GET
+      handler: "members.list"
+      auth: true
+      permission: "members:read"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/members/:userId"
+      method: PATCH
+      handler: "members.updateRole"
+      auth: true
+      permission: "members:update"
+      request:
+        body:
+          role:
+            type: string
+            enum: ["admin", "member", "viewer"]
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/members/:userId"
+      method: DELETE
+      handler: "members.remove"
+      auth: true
+      permission: "members:delete"
+      response:
+        status: 204
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # INVITATIONS
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/organizations/:slug/invitations"
+      method: POST
+      handler: "invitations.create"
+      auth: true
+      permission: "invitations:create"
+      request:
+        body:
+          email:
+            type: string
+            format: email
+            required: true
+          role:
+            type: string
+            default: "member"
+      response:
+        status: 201
+
+    - path: "/invitations/:token/accept"
+      method: POST
+      handler: "invitations.accept"
+      auth: true
+      permission: null
+      description: "Accept invitation (any authenticated user)"
+      response:
+        status: 200
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # BILLING
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/organizations/:slug/billing"
+      method: GET
+      handler: "billing.get"
+      auth: true
+      permission: "billing:read"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/billing/portal"
+      method: POST
+      handler: "billing.createPortalSession"
+      auth: true
+      permission: "billing:manage"
+      description: "Create Stripe billing portal session"
+      response:
+        status: 200
+        body:
+          url: "string"
+
+    - path: "/organizations/:slug/billing/checkout"
+      method: POST
+      handler: "billing.createCheckoutSession"
+      auth: true
+      permission: "billing:manage"
+      request:
+        body:
+          tier:
+            type: string
+            enum: ["starter", "pro"]
+      response:
+        status: 200
+        body:
+          url: "string"
+
+    - path: "/webhooks/stripe"
+      method: POST
+      handler: "billing.handleWebhook"
+      auth: false
+      description: "Stripe webhook endpoint"
+      response:
+        status: 200
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # TENANT-SCOPED CRUD
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/organizations/:slug/{{primary_entity | snake_case | pluralize}}"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.list"
+      auth: true
+      permission: "{{primary_entity | snake_case}}:read"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/{{primary_entity | snake_case | pluralize}}"
+      method: POST
+      handler: "{{primary_entity | camel_case}}.create"
+      auth: true
+      permission: "{{primary_entity | snake_case}}:create"
+      response:
+        status: 201
+
+    - path: "/organizations/:slug/{{primary_entity | snake_case | pluralize}}/:id"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.get"
+      auth: true
+      permission: "{{primary_entity | snake_case}}:read"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/{{primary_entity | snake_case | pluralize}}/:id"
+      method: PATCH
+      handler: "{{primary_entity | camel_case}}.update"
+      auth: true
+      permission: "{{primary_entity | snake_case}}:update"
+      response:
+        status: 200
+
+    - path: "/organizations/:slug/{{primary_entity | snake_case | pluralize}}/:id"
+      method: DELETE
+      handler: "{{primary_entity | camel_case}}.delete"
+      auth: true
+      permission: "{{primary_entity | snake_case}}:delete"
+      response:
+        status: 204
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompts:
+  - name: project_name
+    message: "Project name"
+    default: "my-saas"
+
+  - name: project_description
+    message: "Project description"
+    default: "Multi-tenant SaaS application"
+
+  - name: primary_entity
+    message: "Primary entity name (tenant-scoped)"
+    default: "Project"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERATED FILES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generates:
+  - path: "spec/quick-start.yaml"
+    from: "self"
+
+  - path: "dsl/data.yaml"
+    from: "entities"
+
+  - path: "dsl/api.yaml"
+    from: "api"
+
+  - path: "dsl/auth.yaml"
+    from: "auth"
+
+  - path: "dsl/logic.yaml"
+    from: "rbac"
+
+  - path: "software/ideal/software-ideal.yaml"
+    from: "basic_software_spec"
+
+  - path: "tests/tests.yaml"
+    from: "tests"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT VARIABLES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+env_vars:
+  required:
+    - name: DATABASE_URL
+      description: "PostgreSQL connection string"
+
+    - name: JWT_PRIVATE_KEY
+      description: "RSA private key for JWTs"
+
+    - name: JWT_PUBLIC_KEY
+      description: "RSA public key for JWTs"
+
+    - name: STRIPE_SECRET_KEY
+      description: "Stripe API secret key"
+
+    - name: STRIPE_WEBHOOK_SECRET
+      description: "Stripe webhook signing secret"
+
+    - name: STRIPE_STARTER_PRICE_ID
+      description: "Stripe price ID for starter tier"
+
+    - name: STRIPE_PRO_PRICE_ID
+      description: "Stripe price ID for pro tier"
+
+  optional:
+    - name: GOOGLE_CLIENT_ID
+      description: "Google OAuth client ID"
+
+    - name: GOOGLE_CLIENT_SECRET
+      description: "Google OAuth client secret"
+
+    - name: MAILCHANNELS_API_KEY
+      description: "MailChannels API key for sending OTP emails"
+
+    - name: MAIL_DOMAIN
+      description: "Domain for sending emails (must have DKIM configured)"
+
+    - name: DKIM_PRIVATE_KEY
+      description: "DKIM private key for email authentication"
+
+    - name: TWILIO_ACCOUNT_SID
+      description: "Twilio account SID for SMS OTP"
+
+    - name: TWILIO_AUTH_TOKEN
+      description: "Twilio auth token"
+
+    - name: TWILIO_VERIFY_SERVICE_SID
+      description: "Twilio Verify service SID (recommended)"

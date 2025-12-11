@@ -1,0 +1,507 @@
+# SPARC Quick Start Template: Auth API
+# Level 0 - CRUD API with passwordless authentication
+# Run: sparc init --template auth_api
+
+$schema: "../schemas/json-schemas/quick-start.schema.json"
+template: "auth_api"
+version: "1.0"
+level: 0
+extends: "crud_api"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# META
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: "{{project_name}}"
+  description: "{{project_description}}"
+  version: "0.1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTITIES
+# User entity + your primary entity
+# ═══════════════════════════════════════════════════════════════════════════════
+
+entities:
+
+  - name: "User"
+    table: "users"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+        default: "gen_random_uuid()"
+
+      - name: email
+        type: varchar(255)
+        unique: true
+        required: true
+
+      - name: email_verified
+        type: boolean
+        default: false
+
+      - name: name
+        type: varchar(255)
+        required: false
+
+      - name: avatar_url
+        type: text
+        required: false
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [email]
+        unique: true
+
+  - name: "OtpRequest"
+    table: "otp_requests"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+        default: "gen_random_uuid()"
+
+      - name: identifier
+        type: varchar(255)
+        required: true
+        comment: "Email or phone number"
+
+      - name: identifier_type
+        type: varchar(10)
+        required: true
+        check: "identifier_type IN ('email', 'phone')"
+
+      - name: code_hash
+        type: varchar(255)
+        required: true
+
+      - name: purpose
+        type: varchar(20)
+        required: true
+        check: "purpose IN ('login', 'signup', 'verify')"
+
+      - name: attempts
+        type: integer
+        default: 0
+
+      - name: expires_at
+        type: timestamptz
+        required: true
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [identifier, purpose]
+
+  - name: "OAuthConnection"
+    table: "oauth_connections"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+
+      - name: user_id
+        type: uuid
+        references: "users(id)"
+        on_delete: cascade
+
+      - name: provider
+        type: varchar(20)
+        required: true
+        check: "provider IN ('google', 'apple', 'github', 'microsoft')"
+
+      - name: provider_user_id
+        type: varchar(255)
+        required: true
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [provider, provider_user_id]
+        unique: true
+
+  - name: "{{primary_entity}}"
+    table: "{{primary_entity | snake_case | pluralize}}"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+        default: "gen_random_uuid()"
+
+      - name: user_id
+        type: uuid
+        references: "users(id)"
+        on_delete: cascade
+        required: true
+
+      - name: name
+        type: varchar(255)
+        required: true
+
+      - name: description
+        type: text
+        required: false
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [user_id]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUTHENTICATION
+# Passwordless by default (OTP + Social)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+auth:
+  strategy:
+    mode: "passwordless"
+
+  methods:
+    email_otp:
+      enabled: true
+      code_length: 6
+      ttl_seconds: 600
+      max_attempts: 3
+
+    social:
+      providers:
+        google:
+          enabled: true
+          client_id: "{{GOOGLE_CLIENT_ID}}"
+          client_secret: "{{GOOGLE_CLIENT_SECRET}}"
+
+        github:
+          enabled: "{{github_oauth_enabled}}"
+          client_id: "{{GITHUB_CLIENT_ID}}"
+          client_secret: "{{GITHUB_CLIENT_SECRET}}"
+
+  tokens:
+    jwt:
+      algorithm: "RS256"
+      issuer: "{{project_name}}"
+    access_token:
+      ttl_seconds: 900
+    refresh_token:
+      ttl_seconds: 2592000
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# Auth endpoints + CRUD endpoints (protected)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+api:
+  version: "v1"
+  base_path: "/api/v1"
+
+  endpoints:
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # AUTH ENDPOINTS
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/auth/otp/request"
+      method: POST
+      handler: "auth.requestOtp"
+      auth: false
+      rate_limit:
+        max: 5
+        window: "15m"
+      request:
+        body:
+          email:
+            type: string
+            format: email
+            required: true
+      response:
+        status: 200
+        body:
+          message: "string"
+
+    - path: "/auth/otp/verify"
+      method: POST
+      handler: "auth.verifyOtp"
+      auth: false
+      rate_limit:
+        max: 10
+        window: "15m"
+      request:
+        body:
+          email:
+            type: string
+            format: email
+            required: true
+          code:
+            type: string
+            required: true
+      response:
+        status: 200
+        body:
+          access_token: "string"
+          refresh_token: "string"
+          user:
+            id: "uuid"
+            email: "string"
+
+    - path: "/auth/oauth/:provider"
+      method: GET
+      handler: "auth.oauthInitiate"
+      auth: false
+      response:
+        status: 302
+        headers:
+          Location: "OAuth provider URL"
+
+    - path: "/auth/oauth/:provider/callback"
+      method: GET
+      handler: "auth.oauthCallback"
+      auth: false
+      response:
+        status: 200
+        body:
+          access_token: "string"
+          refresh_token: "string"
+          user:
+            id: "uuid"
+            email: "string"
+
+    - path: "/auth/refresh"
+      method: POST
+      handler: "auth.refresh"
+      auth: false
+      request:
+        body:
+          refresh_token:
+            type: string
+            required: true
+      response:
+        status: 200
+        body:
+          access_token: "string"
+
+    - path: "/auth/me"
+      method: GET
+      handler: "auth.me"
+      auth: true
+      response:
+        status: 200
+        body:
+          id: "uuid"
+          email: "string"
+          name: "string"
+          avatar_url: "string"
+
+    - path: "/auth/logout"
+      method: POST
+      handler: "auth.logout"
+      auth: true
+      response:
+        status: 204
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PROTECTED CRUD ENDPOINTS
+    # ─────────────────────────────────────────────────────────────────────────
+
+    - path: "/{{primary_entity | snake_case | pluralize}}"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.list"
+      auth: true
+      description: "List current user's {{primary_entity | pluralize}}"
+      response:
+        status: 200
+        body:
+          data: "array"
+
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.get"
+      auth: true
+      response:
+        status: 200
+
+    - path: "/{{primary_entity | snake_case | pluralize}}"
+      method: POST
+      handler: "{{primary_entity | camel_case}}.create"
+      auth: true
+      request:
+        body:
+          name:
+            type: string
+            required: true
+          description:
+            type: string
+            required: false
+      response:
+        status: 201
+
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: PATCH
+      handler: "{{primary_entity | camel_case}}.update"
+      auth: true
+      response:
+        status: 200
+
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: DELETE
+      handler: "{{primary_entity | camel_case}}.delete"
+      auth: true
+      response:
+        status: 204
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BASIC TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tests:
+  - name: "Can request OTP"
+    path_ref: "AUTH-001"
+    request:
+      method: POST
+      path: "/api/v1/auth/otp/request"
+      body:
+        email: "test@example.com"
+    expect:
+      status: 200
+
+  - name: "Can verify OTP and get tokens"
+    path_ref: "AUTH-002"
+    mocks:
+      otp_service:
+        scenario: "valid_code"
+    request:
+      method: POST
+      path: "/api/v1/auth/otp/verify"
+      body:
+        email: "test@example.com"
+        code: "123456"
+    expect:
+      status: 200
+      body:
+        access_token: "present"
+        refresh_token: "present"
+
+  - name: "Can access protected endpoint with token"
+    path_ref: "AUTH-003"
+    setup:
+      - login: "test@example.com"
+        as: "user"
+    request:
+      method: GET
+      path: "/api/v1/auth/me"
+      headers:
+        Authorization: "Bearer {{user.access_token}}"
+    expect:
+      status: 200
+
+  - name: "Cannot access protected endpoint without token"
+    path_ref: "AUTH-004"
+    request:
+      method: GET
+      path: "/api/v1/auth/me"
+    expect:
+      status: 401
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompts:
+  - name: project_name
+    message: "Project name"
+    default: "my-api"
+
+  - name: project_description
+    message: "Project description"
+    default: "API with passwordless authentication"
+
+  - name: primary_entity
+    message: "Primary entity name (e.g., Task, Product)"
+    default: "Item"
+
+  - name: github_oauth_enabled
+    message: "Enable GitHub OAuth?"
+    type: boolean
+    default: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERATED FILES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generates:
+  - path: "spec/quick-start.yaml"
+    from: "self"
+
+  - path: "dsl/data.yaml"
+    from: "entities"
+
+  - path: "dsl/api.yaml"
+    from: "api"
+
+  - path: "dsl/auth.yaml"
+    from: "auth"
+
+  - path: "tests/tests.yaml"
+    from: "tests"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT VARIABLES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+env_vars:
+  required:
+    - name: JWT_PRIVATE_KEY
+      description: "RSA private key for signing JWTs"
+
+    - name: JWT_PUBLIC_KEY
+      description: "RSA public key for verifying JWTs"
+
+    - name: DATABASE_URL
+      description: "PostgreSQL connection string"
+
+  optional:
+    - name: GOOGLE_CLIENT_ID
+      description: "Google OAuth client ID"
+
+    - name: GOOGLE_CLIENT_SECRET
+      description: "Google OAuth client secret"
+
+    - name: GITHUB_CLIENT_ID
+      description: "GitHub OAuth client ID"
+
+    - name: GITHUB_CLIENT_SECRET
+      description: "GitHub OAuth client secret"
+
+    - name: MAILCHANNELS_API_KEY
+      description: "MailChannels API key for sending OTP emails"
+
+    - name: MAIL_DOMAIN
+      description: "Domain for sending emails (must have DKIM configured)"
+
+    - name: DKIM_PRIVATE_KEY
+      description: "DKIM private key for email authentication"
+
+    - name: TWILIO_ACCOUNT_SID
+      description: "Twilio account SID for SMS OTP"
+
+    - name: TWILIO_AUTH_TOKEN
+      description: "Twilio auth token"
+
+    - name: TWILIO_VERIFY_SERVICE_SID
+      description: "Twilio Verify service SID (recommended)"

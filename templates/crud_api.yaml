@@ -1,0 +1,247 @@
+# SPARC Quick Start Template: CRUD API
+# Level 0 - Minimal specification for rapid prototyping
+# Run: sparc init --template crud_api
+
+$schema: "../schemas/json-schemas/quick-start.schema.json"
+template: "crud_api"
+version: "1.0"
+level: 0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# META
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: "{{project_name}}"
+  description: "{{project_description}}"
+  version: "0.1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTITIES
+# Define your data models here
+# ═══════════════════════════════════════════════════════════════════════════════
+
+entities:
+
+  - name: "{{primary_entity}}"
+    table: "{{primary_entity | snake_case | pluralize}}"
+    columns:
+      - name: id
+        type: uuid
+        primary: true
+        default: "gen_random_uuid()"
+
+      - name: name
+        type: varchar(255)
+        required: true
+
+      - name: description
+        type: text
+        required: false
+
+      - name: created_at
+        type: timestamptz
+        default: "NOW()"
+
+      - name: updated_at
+        type: timestamptz
+        default: "NOW()"
+
+    indexes:
+      - columns: [created_at]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# RESTful endpoints for CRUD operations
+# ═══════════════════════════════════════════════════════════════════════════════
+
+api:
+  version: "v1"
+  base_path: "/api/v1"
+
+  endpoints:
+
+    # List all
+    - path: "/{{primary_entity | snake_case | pluralize}}"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.list"
+      auth: false
+      response:
+        status: 200
+        body:
+          data: "array"
+          pagination:
+            page: "integer"
+            limit: "integer"
+            total: "integer"
+
+    # Get one
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: GET
+      handler: "{{primary_entity | camel_case}}.get"
+      auth: false
+      response:
+        status: 200
+        body:
+          id: "uuid"
+          name: "string"
+          description: "string"
+          created_at: "datetime"
+          updated_at: "datetime"
+
+    # Create
+    - path: "/{{primary_entity | snake_case | pluralize}}"
+      method: POST
+      handler: "{{primary_entity | camel_case}}.create"
+      auth: false
+      request:
+        body:
+          name:
+            type: string
+            required: true
+          description:
+            type: string
+            required: false
+      response:
+        status: 201
+        body:
+          id: "uuid"
+          name: "string"
+
+    # Update
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: PATCH
+      handler: "{{primary_entity | camel_case}}.update"
+      auth: false
+      request:
+        body:
+          name:
+            type: string
+            required: false
+          description:
+            type: string
+            required: false
+      response:
+        status: 200
+        body:
+          id: "uuid"
+          name: "string"
+          updated_at: "datetime"
+
+    # Delete
+    - path: "/{{primary_entity | snake_case | pluralize}}/:id"
+      method: DELETE
+      handler: "{{primary_entity | camel_case}}.delete"
+      auth: false
+      response:
+        status: 204
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BASIC TESTS
+# Happy path tests only at Level 0
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tests:
+  - name: "Can create {{primary_entity}}"
+    path_ref: "PATH-001"
+    request:
+      method: POST
+      path: "/api/v1/{{primary_entity | snake_case | pluralize}}"
+      body:
+        name: "Test {{primary_entity}}"
+    expect:
+      status: 201
+
+  - name: "Can list {{primary_entity | pluralize}}"
+    path_ref: "PATH-002"
+    request:
+      method: GET
+      path: "/api/v1/{{primary_entity | snake_case | pluralize}}"
+    expect:
+      status: 200
+
+  - name: "Can get {{primary_entity}} by ID"
+    path_ref: "PATH-003"
+    setup:
+      - create: "{{primary_entity}}"
+        as: "item"
+    request:
+      method: GET
+      path: "/api/v1/{{primary_entity | snake_case | pluralize}}/{{item.id}}"
+    expect:
+      status: 200
+
+  - name: "Can update {{primary_entity}}"
+    path_ref: "PATH-004"
+    setup:
+      - create: "{{primary_entity}}"
+        as: "item"
+    request:
+      method: PATCH
+      path: "/api/v1/{{primary_entity | snake_case | pluralize}}/{{item.id}}"
+      body:
+        name: "Updated name"
+    expect:
+      status: 200
+
+  - name: "Can delete {{primary_entity}}"
+    path_ref: "PATH-005"
+    setup:
+      - create: "{{primary_entity}}"
+        as: "item"
+    request:
+      method: DELETE
+      path: "/api/v1/{{primary_entity | snake_case | pluralize}}/{{item.id}}"
+    expect:
+      status: 204
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPTS
+# Variables to collect when running `sparc init --template crud_api`
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompts:
+  - name: project_name
+    message: "Project name"
+    default: "my-api"
+
+  - name: project_description
+    message: "Project description"
+    default: "A simple CRUD API"
+
+  - name: primary_entity
+    message: "Primary entity name (e.g., Task, Product, User)"
+    default: "Item"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERATED FILES
+# Files created by this template
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generates:
+  - path: "spec/quick-start.yaml"
+    from: "self"
+
+  - path: "dsl/data.yaml"
+    from: "entities"
+
+  - path: "dsl/api.yaml"
+    from: "api"
+
+  - path: "tests/tests.yaml"
+    from: "tests"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UPGRADE PATH
+# What to add when upgrading to Level 1
+# ═══════════════════════════════════════════════════════════════════════════════
+
+upgrade_to_level_1:
+  adds:
+    - "dsl/auth.yaml (if auth needed)"
+    - "dsl/logic.yaml (workflows)"
+    - "software/ideal/software-ideal.yaml (full feature specs)"
+    - "Cyclomatic path coverage for all features"
+    - "Edge cases and boundary conditions"
+
+  command: "sparc upgrade --to mvp"
