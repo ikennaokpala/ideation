@@ -2,12 +2,12 @@
 # This is the canonical auth specification. See auth-passwordless-addendum.yaml for
 # extended configurations and white-label tenant customization.
 #
-# SPARC v6.1
+# SPARC v6.1.1
 # Authentication via OTP (Email/SMS) + Social Login ONLY
 # NO PASSWORDS - by design for improved security and UX
 
 $schema: "./json-schemas/auth.schema.json"
-version: "1.0"
+version: "1.1"
 extends: null  # This is the base auth schema
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -60,6 +60,7 @@ authentication:
 
     # ─────────────────────────────────────────────────────────────────────────
     # OTP VIA EMAIL
+    # Provider: MailChannels
     # ─────────────────────────────────────────────────────────────────────────
 
     email_otp:
@@ -82,7 +83,19 @@ authentication:
           window_seconds: 900
 
       delivery:
-        provider: "{{email_provider}}"    # sendgrid | postmark | ses | resend
+        provider: "mailchannels"
+
+        config:
+          api_endpoint: "https://api.mailchannels.net/tx/v1/send"
+          api_key: "{{MAILCHANNELS_API_KEY}}"
+          from_email: "{{FROM_EMAIL}}"
+          from_name: "{{app_name}}"
+
+          # Optional: Domain lockdown for Cloudflare Workers
+          dkim:
+            domain: "{{MAIL_DOMAIN}}"
+            selector: "mailchannels"
+            private_key: "{{DKIM_PRIVATE_KEY}}"
 
         template:
           subject: "Your {{app_name}} verification code"
@@ -105,6 +118,7 @@ authentication:
 
     # ─────────────────────────────────────────────────────────────────────────
     # OTP VIA SMS
+    # Provider: Twilio
     # ─────────────────────────────────────────────────────────────────────────
 
     sms_otp:
@@ -126,7 +140,16 @@ authentication:
           window_seconds: 900
 
       delivery:
-        provider: "{{sms_provider}}"      # twilio | messagebird | vonage
+        provider: "twilio"
+
+        config:
+          account_sid: "{{TWILIO_ACCOUNT_SID}}"
+          auth_token: "{{TWILIO_AUTH_TOKEN}}"
+          from_number: "{{TWILIO_FROM_NUMBER}}"
+
+          # Optional: Twilio Verify Service (recommended for better deliverability)
+          verify_service_sid: "{{TWILIO_VERIFY_SERVICE_SID}}"
+          use_verify_api: true
 
         template:
           body: "{{app_name}} code: {{code}}. Expires in 5 min."

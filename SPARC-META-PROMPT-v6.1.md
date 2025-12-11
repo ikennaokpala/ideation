@@ -2317,9 +2317,9 @@ test_philosophy:
     
   # 4. MOCK ONLY EXTERNAL SERVICES
   allowed_mocks:
-    - "OAuth providers (Google, Apple, Facebook, GitHub)"
-    - "Email providers (SendGrid, Postmark, SES)"
-    - "SMS providers (Twilio, MessageBird)"
+    - "OAuth providers (Google, Apple, GitHub, Microsoft)"
+    - "Email providers (MailChannels)"
+    - "SMS providers (Twilio)"
     - "Payment providers (Stripe, PayPal)"
     - "External storage (S3, GCS)"
     - "Any third-party API"
