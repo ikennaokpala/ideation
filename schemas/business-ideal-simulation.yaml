@@ -1,0 +1,398 @@
+# BUSINESS IDEAL SIMULATION SCHEMA
+# Synthesizes optimal business strategy from all learnings
+# What the business SHOULD be
+
+meta:
+  schema_version: "1.0"
+  simulation_type: "business-ideal"
+  idea_name: ""
+  generated_at: ""
+  competitors_analyzed: []
+  synthesis_confidence: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 1: SYNTHESIS FROM COMPETITOR ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+competitor_synthesis:
+  
+  market_learnings:
+    total_addressable_market: ""
+    actual_opportunity: ""   # After filtering for our constraints
+    market_timing: ""        # early | right | late
+    
+  common_patterns:
+    - pattern: ""
+      prevalence: ""         # all | most | some
+      implication: ""        # Table stakes vs differentiator
+      
+  universal_gaps:
+    - gap: ""
+      why_no_one_solved: ""
+      our_approach: ""
+      
+  business_model_insights:
+    - insight: ""
+      source_competitors: []
+      application: ""
+      
+  cautionary_learnings:
+    - mistake: ""
+      made_by: []
+      how_to_avoid: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 2: FIRST PRINCIPLES BUSINESS MODEL
+# What would we build with no constraints?
+# ═══════════════════════════════════════════════════════════════════════════════
+
+first_principles:
+  
+  core_value_creation: |
+    Strip away all business model complexity.
+    What value do we actually create?
+    
+  constraints_removed:
+    - constraint: ""
+      why_exists: ""
+      ideal_without_it: ""
+      
+  ideal_business_model:
+    value_proposition: ""
+    revenue_model: ""
+    cost_structure: ""
+    key_resources: ""
+    key_activities: ""
+    key_partnerships: ""
+    customer_relationships: ""
+    channels: ""
+    customer_segments: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 3: OPTIMAL MARKET POSITIONING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+positioning:
+  
+  positioning_statement: |
+    For [specific target]
+    Who [specific need/pain]
+    [Product name] is a [category]
+    That [unique benefit]
+    Unlike [specific competitors]
+    We [concrete differentiator]
+    
+  target_market:
+    primary_segment:
+      description: ""
+      size: ""
+      characteristics: []
+      pain_points: []
+      willingness_to_pay: ""
+      acquisition_channel: ""
+      
+    secondary_segments: []
+    
+    explicitly_not_targeting:
+      - segment: ""
+        reason: ""
+        
+  differentiation_pillars:
+    - pillar: ""
+      competitors_weak_here: []
+      our_advantage: ""
+      defensibility: ""
+      evidence_of_demand: ""
+      
+  competitive_strategy:
+    type: ""                 # cost-leadership | differentiation | focus | blue-ocean
+    battleground: ""         # Where we compete
+    unfair_advantages: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 4: OPTIMAL REVENUE MODEL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+revenue_model:
+  
+  model_type: ""             # saas | marketplace | usage | hybrid
+  
+  pricing_philosophy: ""     # value-based | cost-plus | competitive | freemium
+  
+  pricing_tiers:
+    - tier: ""
+      name: ""
+      price: ""
+      billing: ""
+      target_segment: ""
+      
+      value_metric: ""       # What they pay for
+      
+      features_included:
+        - feature: ""
+          limit: ""
+          
+      features_excluded: []
+      
+      unit_economics:
+        expected_cac: ""
+        expected_ltv: ""
+        expected_margin: ""
+        
+  free_tier:
+    exists: true
+    purpose: ""              # acquisition | activation | viral | freemium-conversion
+    limitations: []
+    conversion_trigger: ""
+    
+  expansion_revenue:
+    strategies:
+      - strategy: ""
+        trigger: ""
+        expected_uplift: ""
+        
+  target_unit_economics:
+    cac: ""
+    ltv: ""
+    ltv_cac_ratio: ""        # Target: >3x
+    payback_months: ""       # Target: <12
+    gross_margin: ""         # Target: >70%
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 5: OPTIMAL GO-TO-MARKET
+# ═══════════════════════════════════════════════════════════════════════════════
+
+go_to_market:
+  
+  strategy: ""               # product-led | sales-led | community-led | hybrid
+  
+  phase_1_launch:
+    target_segment: ""
+    channel: ""
+    message: ""
+    success_metric: ""
+    timeline: ""
+    
+  phase_2_growth:
+    expansion_segments: []
+    channels: []
+    viral_mechanics: []
+    
+  phase_3_scale:
+    market_expansion: []
+    channel_diversification: []
+    partnership_strategy: ""
+    
+  channel_strategy:
+    primary:
+      - channel: ""
+        why_primary: ""
+        expected_cac: ""
+        expected_volume: ""
+        
+    secondary: []
+    
+    avoid:
+      - channel: ""
+        why_avoid: ""
+        
+  messaging:
+    headline: ""
+    subheadline: ""
+    key_benefits:
+      - benefit: ""
+        proof_point: ""
+    objection_handling:
+      - objection: ""
+        response: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 6: MOAT STRATEGY
+# How we become defensible
+# ═══════════════════════════════════════════════════════════════════════════════
+
+moat_strategy:
+  
+  primary_moat:
+    type: ""                 # network-effects | data | brand | switching-costs | scale
+    how_we_build_it: ""
+    timeline_to_moat: ""
+    
+  secondary_moats: []
+  
+  moat_building_sequence:
+    - phase: 1
+      moat_element: ""
+      actions: []
+      milestone: ""
+      
+  defensibility_against:
+    - threat: ""
+      defense: ""
+      confidence: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 7: TEMPORAL BUSINESS EVOLUTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+temporal_evolution:
+  
+  year_1:
+    business_focus: ""
+    revenue_target: ""
+    customer_target: ""
+    key_milestones:
+      - milestone: ""
+        timeline: ""
+    acceptable_losses: []
+    success_criteria: []
+    
+  year_3:
+    business_focus: ""
+    revenue_target: ""
+    market_position: ""
+    expansion_moves: []
+    moat_status: ""
+    
+  year_5:
+    business_focus: ""
+    revenue_target: ""
+    platform_plays: []
+    ecosystem_position: ""
+    exit_options: []
+    
+  year_10:
+    vision: ""
+    market_transformation: ""
+    our_role: ""
+    
+  year_20:
+    enduring_value: ""
+    what_survives_disruption: ""
+    legacy: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 8: RISK ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+risks:
+  
+  market_risks:
+    - risk: ""
+      likelihood: ""
+      impact: ""
+      mitigation: ""
+      
+  competitive_risks:
+    - risk: ""
+      threat_source: ""
+      mitigation: ""
+      
+  execution_risks:
+    - risk: ""
+      mitigation: ""
+      
+  financial_risks:
+    - risk: ""
+      mitigation: ""
+      
+  existential_risks:
+    - risk: ""
+      trigger: ""
+      response: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 9: SUCCESS METRICS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+metrics:
+  
+  north_star: ""             # The ONE metric
+  
+  primary_metrics:
+    - metric: ""
+      target: ""
+      measurement: ""
+      
+  supporting_metrics:
+    - metric: ""
+      target: ""
+      leading_indicator_for: ""
+      
+  health_metrics:
+    - metric: ""
+      healthy_range: ""
+      warning_threshold: ""
+      
+  anti_metrics:
+    - metric: ""
+      why_not_to_optimize: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 10: COGNITIVE STRESS TEST
+# Apply all patterns to validate the ideal
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cognitive_validation:
+  
+  convergent:
+    is_this_optimal: ""
+    key_tradeoffs: []
+    
+  divergent:
+    alternative_models_considered:
+      - model: ""
+        why_rejected: ""
+    what_might_we_be_missing: []
+    
+  lateral:
+    analogous_successes:
+      - company: ""
+        pattern: ""
+        confidence_boost: ""
+        
+  systems:
+    ecosystem_dependencies: []
+    second_order_effects: []
+    unintended_consequences: []
+    
+  critical:
+    weaknesses_in_this_plan:
+      - weakness: ""
+        severity: ""
+        mitigation: ""
+    assumptions_that_could_be_wrong:
+      - assumption: ""
+        if_wrong: ""
+        
+  abstract:
+    what_archetype_is_this: ""
+    historical_analogies: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART 11: CONFIDENCE & OPEN QUESTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+confidence:
+  
+  overall: ""
+  
+  high_confidence_elements:
+    - element: ""
+      basis: ""
+      
+  uncertain_elements:
+    - element: ""
+      uncertainty: ""
+      resolution_path: ""
+      
+  open_questions:
+    - question: ""
+      importance: ""
+      how_to_answer: ""
+      
+  validation_experiments:
+    - hypothesis: ""
+      experiment: ""
+      success_criteria: ""
+      timeline: ""
