@@ -1,0 +1,647 @@
+# DEPLOY.YAML DSL SCHEMA
+# Executable specification for infrastructure & deployment
+# 
+# Generates:
+# - Terraform configurations
+# - Kubernetes manifests
+# - Docker Compose files
+# - CI/CD pipelines (GitHub Actions, GitLab CI)
+# - Cloud-specific configs (AWS, GCP, Azure)
+#
+# Simulation:
+# - Cost estimation
+# - Architecture diagram
+# - Dry-run deployment
+
+$schema: "https://sparc-dsl.dev/schemas/deploy.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""
+  description: ""
+  version: "0.1.0"
+  
+  targets:
+    infrastructure: "terraform"  # terraform | pulumi | cdk | none
+    orchestration: "kubernetes"  # kubernetes | docker-compose | ecs | none
+    ci_cd: "github_actions"      # github_actions | gitlab_ci | circleci | none
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENVIRONMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+environments:
+  
+  - name: "development"
+    description: "Local development environment"
+    type: "local"
+    
+    services:
+      - name: "app"
+        source: "./apps/web"
+        command: "npm run dev"
+        port: 3000
+        
+      - name: "api"
+        source: "./apps/api"
+        command: "cargo watch -x run"
+        port: 8080
+        
+      - name: "database"
+        image: "postgres:15"
+        port: 5432
+        environment:
+          POSTGRES_DB: "notifycommons_dev"
+          POSTGRES_USER: "dev"
+          POSTGRES_PASSWORD: "dev"
+        volumes:
+          - "postgres_data:/var/lib/postgresql/data"
+          
+      - name: "redis"
+        image: "redis:7-alpine"
+        port: 6379
+        
+      - name: "mailpit"
+        image: "axllent/mailpit"
+        ports:
+          smtp: 1025
+          web: 8025
+          
+  - name: "staging"
+    description: "Staging environment for testing"
+    type: "cloud"
+    cloud: "aws"
+    region: "us-east-1"
+    
+    inherit_from: "production"
+    
+    overrides:
+      replicas: 1
+      instance_type: "t3.small"
+      database:
+        instance_class: "db.t3.micro"
+        
+  - name: "production"
+    description: "Production environment"
+    type: "cloud"
+    cloud: "aws"
+    region: "us-east-1"
+    
+    high_availability: true
+    multi_az: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INFRASTRUCTURE
+# Cloud resources
+# ═══════════════════════════════════════════════════════════════════════════════
+
+infrastructure:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Networking
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  networking:
+    vpc:
+      cidr: "10.0.0.0/16"
+      
+    subnets:
+      public:
+        - cidr: "10.0.1.0/24"
+          az: "a"
+        - cidr: "10.0.2.0/24"
+          az: "b"
+      private:
+        - cidr: "10.0.10.0/24"
+          az: "a"
+        - cidr: "10.0.11.0/24"
+          az: "b"
+          
+    nat_gateway: true
+    
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Compute
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  compute:
+    type: "kubernetes"        # kubernetes | ecs | ec2 | lambda
+    
+    cluster:
+      name: "notifycommons"
+      version: "1.28"
+      
+      node_groups:
+        - name: "general"
+          instance_type: "t3.medium"
+          min_size: 2
+          max_size: 10
+          desired_size: 3
+          
+        - name: "workers"
+          instance_type: "t3.large"
+          min_size: 1
+          max_size: 20
+          desired_size: 2
+          labels:
+            workload: "background"
+          taints:
+            - key: "workload"
+              value: "background"
+              effect: "NoSchedule"
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Database
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  database:
+    type: "rds"
+    engine: "postgres"
+    version: "15"
+    
+    production:
+      instance_class: "db.r6g.large"
+      storage: 100
+      storage_type: "gp3"
+      multi_az: true
+      
+      backup:
+        retention_days: 30
+        window: "03:00-04:00"
+        
+      maintenance:
+        window: "Sun:04:00-Sun:05:00"
+        
+    read_replicas:
+      - region: "us-west-2"
+        instance_class: "db.r6g.medium"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Cache
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  cache:
+    type: "elasticache"
+    engine: "redis"
+    version: "7.0"
+    
+    production:
+      node_type: "cache.r6g.medium"
+      num_cache_nodes: 2
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Storage
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  storage:
+    - name: "uploads"
+      type: "s3"
+      bucket_name_env: "S3_UPLOADS_BUCKET"
+      
+      lifecycle:
+        - prefix: "temp/"
+          expiration_days: 7
+          
+      cors:
+        allowed_origins:
+          - "https://app.notifycommons.org"
+        allowed_methods:
+          - "GET"
+          - "PUT"
+          - "POST"
+        max_age_seconds: 3600
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CDN
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  cdn:
+    type: "cloudfront"
+    
+    origins:
+      - name: "app"
+        domain_env: "APP_DOMAIN"
+        
+      - name: "static"
+        type: "s3"
+        bucket: "static-assets"
+        
+    behaviors:
+      - path: "/api/*"
+        origin: "app"
+        cache: false
+        
+      - path: "/_next/static/*"
+        origin: "static"
+        cache: true
+        ttl: 31536000
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DNS
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  dns:
+    provider: "route53"
+    zone: "notifycommons.org"
+    
+    records:
+      - name: "app"
+        type: "A"
+        alias: "cdn"
+        
+      - name: "api"
+        type: "A"
+        alias: "load_balancer"
+        
+      - name: "staging"
+        type: "CNAME"
+        value: "staging-lb.notifycommons.org"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SERVICES
+# Application services/deployments
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Web Application
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "web"
+    description: "Next.js web application"
+    
+    source:
+      type: "dockerfile"
+      path: "./apps/web"
+      dockerfile: "Dockerfile"
+      
+    resources:
+      cpu: "500m"
+      memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+        
+    replicas:
+      min: 2
+      max: 10
+      
+    autoscaling:
+      metrics:
+        - type: "cpu"
+          target: 70
+        - type: "memory"
+          target: 80
+          
+    health_check:
+      path: "/api/health"
+      port: 3000
+      interval: 30
+      timeout: 5
+      
+    environment:
+      - name: "NODE_ENV"
+        value: "production"
+      - name: "DATABASE_URL"
+        secret: "database-credentials"
+        key: "url"
+      - name: "REDIS_URL"
+        secret: "redis-credentials"
+        key: "url"
+        
+    ports:
+      - port: 3000
+        protocol: "http"
+        
+    ingress:
+      host: "app.notifycommons.org"
+      tls: true
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API Service
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "api"
+    description: "Rust API service"
+    
+    source:
+      type: "dockerfile"
+      path: "./apps/api"
+      
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
+        
+    replicas:
+      min: 3
+      max: 20
+      
+    health_check:
+      path: "/health"
+      port: 8080
+      
+    ports:
+      - port: 8080
+        protocol: "http"
+        
+    ingress:
+      host: "api.notifycommons.org"
+      tls: true
+      rate_limit:
+        requests_per_second: 100
+        burst: 200
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Background Workers
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "worker"
+    description: "Background job processor"
+    
+    source:
+      type: "dockerfile"
+      path: "./apps/worker"
+      
+    resources:
+      cpu: "500m"
+      memory: "512Mi"
+      
+    replicas:
+      min: 2
+      max: 50
+      
+    autoscaling:
+      metrics:
+        - type: "custom"
+          name: "queue_depth"
+          target: 100
+          
+    node_selector:
+      workload: "background"
+      
+    tolerations:
+      - key: "workload"
+        value: "background"
+        effect: "NoSchedule"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Cron Jobs
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "scheduler"
+    type: "cronjob"
+    description: "Scheduled tasks"
+    
+    jobs:
+      - name: "process-scheduled"
+        schedule: "* * * * *"
+        command: ["./scheduler", "process-scheduled"]
+        
+      - name: "daily-stats"
+        schedule: "0 1 * * *"
+        command: ["./scheduler", "aggregate-stats"]
+        
+      - name: "cleanup"
+        schedule: "0 3 * * *"
+        command: ["./scheduler", "cleanup"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CI/CD PIPELINES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+pipelines:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Pull Request Pipeline
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "pr"
+    trigger:
+      - "pull_request"
+      
+    jobs:
+      - name: "lint"
+        steps:
+          - run: "npm run lint"
+          - run: "cargo clippy"
+          
+      - name: "test"
+        steps:
+          - run: "npm run test"
+          - run: "cargo test"
+          
+      - name: "build"
+        steps:
+          - run: "npm run build"
+          - run: "cargo build --release"
+          
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Main Branch Pipeline
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "main"
+    trigger:
+      - push:
+          branches: ["main"]
+          
+    jobs:
+      - name: "test"
+        steps:
+          - run: "npm run test"
+          - run: "cargo test"
+          
+      - name: "build"
+        steps:
+          - run: "docker build -t web ./apps/web"
+          - run: "docker build -t api ./apps/api"
+          
+      - name: "push"
+        needs: ["build"]
+        steps:
+          - run: "docker push $ECR_REGISTRY/web:$SHA"
+          - run: "docker push $ECR_REGISTRY/api:$SHA"
+          
+      - name: "deploy-staging"
+        needs: ["push"]
+        environment: "staging"
+        steps:
+          - run: "kubectl set image deployment/web web=$ECR_REGISTRY/web:$SHA"
+          - run: "kubectl set image deployment/api api=$ECR_REGISTRY/api:$SHA"
+          
+      - name: "integration-tests"
+        needs: ["deploy-staging"]
+        steps:
+          - run: "npm run test:e2e -- --env=staging"
+          
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Release Pipeline
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "release"
+    trigger:
+      - push:
+          tags: ["v*"]
+          
+    jobs:
+      - name: "build"
+        steps:
+          - run: "docker build -t web ./apps/web"
+          - run: "docker build -t api ./apps/api"
+          
+      - name: "push"
+        steps:
+          - run: "docker push $ECR_REGISTRY/web:$TAG"
+          - run: "docker push $ECR_REGISTRY/api:$TAG"
+          
+      - name: "deploy-production"
+        needs: ["push"]
+        environment: "production"
+        manual_approval: true
+        steps:
+          - run: "kubectl set image deployment/web web=$ECR_REGISTRY/web:$TAG"
+          - run: "kubectl set image deployment/api api=$ECR_REGISTRY/api:$TAG"
+          - run: "kubectl rollout status deployment/web"
+          - run: "kubectl rollout status deployment/api"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECRETS MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+secrets:
+  
+  provider: "aws_secrets_manager"  # aws_secrets_manager | vault | kubernetes
+  
+  definitions:
+    - name: "database-credentials"
+      keys:
+        - "url"
+        - "host"
+        - "port"
+        - "username"
+        - "password"
+        - "database"
+        
+    - name: "redis-credentials"
+      keys:
+        - "url"
+        - "host"
+        - "port"
+        - "password"
+        
+    - name: "jwt-keys"
+      keys:
+        - "private_key"
+        - "public_key"
+        
+    - name: "oauth-google"
+      keys:
+        - "client_id"
+        - "client_secret"
+        
+    - name: "api-keys"
+      keys:
+        - "twilio_api_key"
+        - "sendgrid_api_key"
+        - "postmark_api_key"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MONITORING & OBSERVABILITY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+monitoring:
+  
+  metrics:
+    provider: "prometheus"
+    
+    custom_metrics:
+      - name: "notifications_sent_total"
+        type: "counter"
+        labels: ["channel", "status"]
+        
+      - name: "notification_delivery_duration"
+        type: "histogram"
+        labels: ["channel", "provider"]
+        buckets: [0.1, 0.5, 1, 2, 5, 10]
+        
+  logging:
+    provider: "cloudwatch"
+    
+    format: "json"
+    level: "info"
+    
+    structured_fields:
+      - "request_id"
+      - "user_id"
+      - "organization_id"
+      
+  tracing:
+    provider: "otel"
+    
+    sampling:
+      rate: 0.1              # 10% of requests
+      
+    exporters:
+      - type: "jaeger"
+        endpoint_env: "JAEGER_ENDPOINT"
+        
+  alerting:
+    provider: "pagerduty"
+    
+    rules:
+      - name: "high_error_rate"
+        condition: "error_rate > 0.05"
+        duration: "5m"
+        severity: "critical"
+        
+      - name: "high_latency"
+        condition: "p99_latency > 2s"
+        duration: "5m"
+        severity: "warning"
+        
+      - name: "low_success_rate"
+        condition: "delivery_success_rate < 0.95"
+        duration: "10m"
+        severity: "critical"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION
+# Deployment testing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  enabled: true
+  
+  modes:
+    - name: "cost_estimation"
+      description: "Estimate monthly cloud costs"
+      output: "markdown_table"
+      
+    - name: "architecture_diagram"
+      description: "Generate architecture diagram"
+      output: "mermaid"
+      
+    - name: "terraform_plan"
+      description: "Dry-run Terraform changes"
+      command: "terraform plan"
+      
+    - name: "k8s_dry_run"
+      description: "Validate Kubernetes manifests"
+      command: "kubectl apply --dry-run=server"
+      
+  cost_estimate:
+    # Rough monthly estimates for production
+    compute: "$500"
+    database: "$200"
+    cache: "$100"
+    storage: "$50"
+    cdn: "$100"
+    other: "$50"
+    total: "$1000"

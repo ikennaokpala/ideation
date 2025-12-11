@@ -1,0 +1,601 @@
+# SIMULATION MODES
+# Interactive exploration and validation tools for SPARC specifications
+#
+# These simulations allow you to:
+# - Visualize competitive landscape
+# - Explore all cyclomatic paths
+# - Preview UI without building
+# - Test APIs with mock server
+# - Estimate infrastructure costs
+# - Validate test coverage
+
+$schema: "https://sparc-dsl.dev/schemas/simulation-modes.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION CLI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cli:
+  name: "sparc"
+  version: "6.1.0"
+  
+  commands:
+    - "sparc sim <category>:<mode>"
+    - "sparc interactive"
+    - "sparc validate"
+    - "sparc generate"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUSINESS SIMULATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+business:
+  
+  - name: "competitive_landscape"
+    command: "sparc sim business:landscape"
+    description: "Visual competitive positioning map"
+    
+    input:
+      - "business/competitors/*.yaml"
+      - "business/ideal/business-ideal.yaml"
+      
+    output:
+      type: "interactive_chart"
+      format: "html"
+      
+    features:
+      - "2D positioning map (price vs feature completeness)"
+      - "Market share bubbles"
+      - "Segment filters"
+      - "Your projected position highlighted"
+      - "Export to PNG/SVG"
+      
+    example_usage: |
+      $ sparc sim business:landscape
+      
+      🎯 Competitive Landscape
+      
+      Opening interactive chart at http://localhost:3001
+      
+      Competitors plotted:
+      - Competitor A: ($99/mo, 85% features) - Leader
+      - Competitor B: ($49/mo, 65% features) - Challenger
+      - Competitor C: ($199/mo, 95% features) - Enterprise
+      - Your position: ($79/mo, 80% features) - Projected
+      
+  - name: "pricing_comparison"
+    command: "sparc sim business:pricing"
+    description: "Interactive pricing tier comparison matrix"
+    
+    input:
+      - "business/competitors/*.yaml"
+      - "business/ideal/business-ideal.yaml#/optimal_business_model/pricing_strategy"
+      
+    output:
+      type: "interactive_table"
+      format: "html"
+      
+    features:
+      - "Side-by-side tier comparison"
+      - "Feature matrix with checkmarks"
+      - "Price per feature analysis"
+      - "Value metric comparison"
+      - "Export to CSV/Markdown"
+      
+  - name: "market_sizing"
+    command: "sparc sim business:market"
+    description: "TAM/SAM/SOM visualization"
+    
+    input:
+      - "business/ideal/business-ideal.yaml#/competitor_synthesis/market_overview"
+      
+    output:
+      type: "funnel_chart"
+      format: "html"
+      
+    features:
+      - "TAM/SAM/SOM funnel"
+      - "Growth projections"
+      - "Segment breakdown"
+      - "Source citations"
+      
+  - name: "gtm_timeline"
+    command: "sparc sim business:gtm"
+    description: "Go-to-market timeline and milestones"
+    
+    input:
+      - "business/ideal/business-ideal.yaml#/optimal_go_to_market"
+      - "business/ideal/business-ideal.yaml#/roadmap"
+      
+    output:
+      type: "gantt_chart"
+      format: "html"
+      
+    features:
+      - "Phase timeline visualization"
+      - "Milestone markers"
+      - "Resource allocation"
+      - "Dependencies"
+      - "Export to project management tools"
+      
+  - name: "unit_economics"
+    command: "sparc sim business:unit-economics"
+    description: "Unit economics calculator and projections"
+    
+    input:
+      - "business/ideal/business-ideal.yaml#/optimal_business_model/target_unit_economics"
+      
+    output:
+      type: "calculator"
+      format: "html"
+      
+    features:
+      - "Interactive CAC/LTV calculator"
+      - "Payback period visualization"
+      - "Sensitivity analysis"
+      - "Scenario comparison"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOFTWARE SIMULATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+software:
+  
+  - name: "feature_matrix"
+    command: "sparc sim software:features"
+    description: "Feature comparison across competitors"
+    
+    input:
+      - "software/competitors/*.yaml"
+      - "software/ideal/software-ideal.yaml"
+      
+    output:
+      type: "interactive_table"
+      format: "html"
+      
+    features:
+      - "Feature-by-feature comparison"
+      - "Maturity level indicators"
+      - "Gap analysis highlighting"
+      - "Filter by domain/priority"
+      - "Export to spreadsheet"
+      
+  - name: "path_explorer"
+    command: "sparc sim software:paths"
+    description: "Interactive cyclomatic path explorer"
+    
+    input:
+      - "software/ideal/software-ideal.yaml#/feature_specifications"
+      
+    output:
+      type: "interactive_flowchart"
+      format: "html"
+      
+    features:
+      - "Visual flow diagram for each feature"
+      - "Click through decision points"
+      - "See all possible paths"
+      - "Path probability display"
+      - "Test coverage indicator"
+      - "Link to corresponding test"
+      
+    example_usage: |
+      $ sparc sim software:paths --feature=user_registration
+      
+      🔀 Path Explorer: User Registration
+      
+      Opening at http://localhost:3001/paths/user_registration
+      
+      Decision Points: 9
+      Total Paths: 13
+      Test Coverage: 13/13 (100%)
+      
+      Paths:
+      ├── PATH-001: Happy path (70% probability) ✅ Tested
+      ├── PATH-002: Invalid email (5%) ✅ Tested
+      ├── PATH-003: Password too short (8%) ✅ Tested
+      └── ... 10 more paths
+      
+  - name: "state_machine_viewer"
+    command: "sparc sim software:states"
+    description: "Interactive state machine visualization"
+    
+    input:
+      - "software/ideal/software-ideal.yaml#/feature_specifications/*/state_machine"
+      - "dsl/logic.yaml#/state_machines"
+      
+    output:
+      type: "state_diagram"
+      format: "html"
+      
+    features:
+      - "Visual state diagram"
+      - "Click transitions to see guards/actions"
+      - "Simulate state transitions"
+      - "See allowed actions per state"
+      - "Export to XState visualizer"
+      
+  - name: "api_explorer"
+    command: "sparc sim software:api"
+    description: "Interactive API documentation"
+    
+    input:
+      - "software/ideal/software-ideal.yaml#/feature_specifications/*/api"
+      - "dsl/api.yaml"
+      
+    output:
+      type: "swagger_ui"
+      format: "html"
+      
+    features:
+      - "OpenAPI/Swagger UI"
+      - "Try endpoints (connected to mock server)"
+      - "Request/response examples"
+      - "Authentication testing"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TECHNICAL SIMULATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+technical:
+  
+  - name: "mock_server"
+    command: "sparc sim api:mock"
+    description: "Running mock API server from specification"
+    
+    input:
+      - "dsl/api.yaml"
+      - "software/ideal/software-ideal.yaml#/feature_specifications/*/api"
+      
+    output:
+      type: "server"
+      port: 3000
+      
+    features:
+      - "Full API mock from spec"
+      - "Realistic response delays"
+      - "Error simulation"
+      - "Request logging"
+      - "Stateful mode (remembers data)"
+      
+    example_usage: |
+      $ sparc sim api:mock
+      
+      🚀 Mock API Server
+      
+      Server running at http://localhost:3000
+      
+      Endpoints:
+      POST /api/v1/auth/register    → 201 Created
+      POST /api/v1/auth/login       → 200 OK
+      GET  /api/v1/notifications    → 200 OK
+      POST /api/v1/notifications    → 202 Accepted
+      
+      Options:
+      --delay=200ms     Add response delay
+      --error-rate=5    Simulate 5% error rate
+      --stateful        Remember created resources
+      
+  - name: "ui_prototype"
+    command: "sparc sim ui:prototype"
+    description: "Interactive UI prototype from specification"
+    
+    input:
+      - "dsl/ui.yaml"
+      
+    output:
+      type: "storybook"
+      port: 6006
+      
+    features:
+      - "Storybook with all components"
+      - "Screen previews"
+      - "Interactive navigation"
+      - "Mobile/tablet/desktop views"
+      - "Dark mode toggle"
+      
+  - name: "database_diagram"
+    command: "sparc sim data:diagram"
+    description: "Entity relationship diagram"
+    
+    input:
+      - "dsl/data.yaml"
+      
+    output:
+      type: "erd"
+      format: "html"
+      
+    features:
+      - "Interactive ERD"
+      - "Click entity for details"
+      - "Relationship highlighting"
+      - "Export to dbdiagram.io"
+      - "Generate migration preview"
+      
+  - name: "architecture_diagram"
+    command: "sparc sim deploy:architecture"
+    description: "System architecture visualization"
+    
+    input:
+      - "dsl/deploy.yaml"
+      - "architecture/platform-architecture.yaml"
+      
+    output:
+      type: "diagram"
+      format: "html"
+      
+    features:
+      - "Service topology"
+      - "Data flow arrows"
+      - "Network boundaries"
+      - "Database connections"
+      - "Export to draw.io/Mermaid"
+      
+  - name: "cost_estimation"
+    command: "sparc sim deploy:cost"
+    description: "Infrastructure cost estimation"
+    
+    input:
+      - "dsl/deploy.yaml"
+      
+    output:
+      type: "calculator"
+      format: "html"
+      
+    features:
+      - "Monthly cost breakdown"
+      - "Per-service costs"
+      - "Scaling projections"
+      - "Cost comparison (AWS vs GCP vs Azure)"
+      - "Reserved instance savings"
+      
+    example_usage: |
+      $ sparc sim deploy:cost
+      
+      💰 Infrastructure Cost Estimation
+      
+      Environment: Production
+      Cloud: AWS
+      Region: us-east-1
+      
+      Monthly Costs:
+      ├── Compute (EKS)        $450
+      ├── Database (RDS)       $200
+      ├── Cache (ElastiCache)  $100
+      ├── Storage (S3)         $50
+      ├── CDN (CloudFront)     $75
+      ├── Monitoring           $50
+      └── Total               $925/month
+      
+      Scaling to 10x traffic: ~$3,500/month
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLATFORM SIMULATIONS (If platform architecture)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+platform:
+  
+  - name: "service_map"
+    command: "sparc sim platform:services"
+    description: "Service dependency visualization"
+    
+    input:
+      - "architecture/platform-architecture.yaml#/bounded_contexts"
+      
+    output:
+      type: "service_mesh"
+      format: "html"
+      
+    features:
+      - "Service boxes with health"
+      - "Dependency arrows"
+      - "API surface labels"
+      - "Database connections"
+      - "Click for service details"
+      
+  - name: "auth_flows"
+    command: "sparc sim platform:auth"
+    description: "Authentication flow sequence diagrams"
+    
+    input:
+      - "architecture/platform-architecture.yaml#/unified_auth"
+      - "dsl/auth.yaml"
+      
+    output:
+      type: "sequence_diagram"
+      format: "html"
+      
+    features:
+      - "Login flow"
+      - "OAuth flows (per provider)"
+      - "Token refresh flow"
+      - "Service-to-service auth"
+      - "Export to Mermaid"
+      
+  - name: "event_flow"
+    command: "sparc sim platform:events"
+    description: "Event bus message flow visualization"
+    
+    input:
+      - "architecture/platform-architecture.yaml#/cross_cutting/event_bus"
+      
+    output:
+      type: "flow_diagram"
+      format: "html"
+      
+    features:
+      - "Publishers and subscribers"
+      - "Event type catalog"
+      - "Message flow animation"
+      - "Dead letter queue visibility"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTING SIMULATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+testing:
+  
+  - name: "coverage_report"
+    command: "sparc sim tests:coverage"
+    description: "Path-to-test coverage mapping"
+    
+    input:
+      - "software/ideal/software-ideal.yaml#/feature_specifications/*/paths"
+      - "tests/tests.yaml"
+      
+    output:
+      type: "coverage_report"
+      format: "html"
+      
+    features:
+      - "Path → Test mapping"
+      - "Missing test highlighting"
+      - "Edge case coverage"
+      - "Boundary coverage"
+      - "Export to Markdown"
+      
+    example_usage: |
+      $ sparc sim tests:coverage
+      
+      📊 Cyclomatic Path Coverage Report
+      
+      Feature: User Registration
+      ├── Paths: 13/13 covered (100%) ✅
+      ├── Edge Cases: 10/10 covered (100%) ✅
+      └── Boundaries: 8/8 covered (100%) ✅
+      
+      Feature: User Login
+      ├── Paths: 8/10 covered (80%) ⚠️
+      │   └── Missing: PATH-009, PATH-010
+      ├── Edge Cases: 5/6 covered (83%) ⚠️
+      └── Boundaries: 4/4 covered (100%) ✅
+      
+      Overall: 95% coverage
+      
+  - name: "test_matrix"
+    command: "sparc sim tests:matrix"
+    description: "Test case matrix visualization"
+    
+    input:
+      - "tests/tests.yaml"
+      
+    output:
+      type: "matrix"
+      format: "html"
+      
+    features:
+      - "Feature × Test case matrix"
+      - "Status indicators"
+      - "Priority highlighting"
+      - "Filter by status"
+      
+  - name: "mock_validation"
+    command: "sparc sim tests:mocks"
+    description: "Validate external service mocks"
+    
+    input:
+      - "tests/mocks/*.yaml"
+      
+    output:
+      type: "validation_report"
+      format: "terminal"
+      
+    features:
+      - "Mock completeness check"
+      - "Scenario coverage"
+      - "Response validation"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTERACTIVE MODE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+interactive:
+  
+  command: "sparc interactive"
+  description: "Full interactive exploration environment"
+  
+  features:
+    - "Dashboard with all simulations"
+    - "Cross-linked navigation"
+    - "Live spec editing"
+    - "Validation on save"
+    - "Code generation triggers"
+    
+  port: 3001
+  
+  sections:
+    - name: "Business"
+      simulations:
+        - "competitive_landscape"
+        - "pricing_comparison"
+        - "market_sizing"
+        - "gtm_timeline"
+        
+    - name: "Software"
+      simulations:
+        - "feature_matrix"
+        - "path_explorer"
+        - "state_machine_viewer"
+        - "api_explorer"
+        
+    - name: "Technical"
+      simulations:
+        - "mock_server"
+        - "ui_prototype"
+        - "database_diagram"
+        - "architecture_diagram"
+        - "cost_estimation"
+        
+    - name: "Platform"
+      condition: "architecture.type == 'platform'"
+      simulations:
+        - "service_map"
+        - "auth_flows"
+        - "event_flow"
+        
+    - name: "Testing"
+      simulations:
+        - "coverage_report"
+        - "test_matrix"
+        - "mock_validation"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION COMMAND
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validate:
+  
+  command: "sparc validate"
+  description: "Validate all specifications for completeness"
+  
+  checks:
+    - name: "Schema validation"
+      description: "All YAML files match their schemas"
+      
+    - name: "Cross-reference validation"
+      description: "All references between files are valid"
+      
+    - name: "Path completeness"
+      description: "All features have complete cyclomatic paths"
+      
+    - name: "Test coverage"
+      description: "All paths have corresponding tests"
+      
+    - name: "DSL consistency"
+      description: "DSL files are internally consistent"
+      
+  output:
+    format: "terminal"
+    
+    example: |
+      $ sparc validate
+      
+      ✅ Schema validation passed
+      ✅ Cross-reference validation passed
+      ✅ Path completeness passed (147 paths across 12 features)
+      ⚠️ Test coverage: 142/147 paths covered (97%)
+         Missing: login/PATH-009, login/PATH-010, payment/PATH-015
+      ✅ DSL consistency passed
+      
+      Overall: 4/5 checks passed

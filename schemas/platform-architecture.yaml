@@ -1,0 +1,988 @@
+# PLATFORM ARCHITECTURE SCHEMA
+# For multi-service platforms with unified authentication and bounded contexts
+#
+# Use this schema when building:
+# - Multi-product platforms
+# - Marketplace applications
+# - B2B2C systems
+# - White-label ready services
+
+$schema: "https://sparc-dsl.dev/schemas/platform-architecture.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  platform_name: ""
+  description: ""
+  version: "1.0.0"
+  created_at: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLATFORM DECISION
+# Why this is a platform vs single SaaS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+platform_decision:
+  
+  decision: "platform"        # platform | single_saas
+  confidence: ""              # high | medium | low
+  
+  indicators_matched:
+    - indicator: ""
+      evidence: ""
+      
+  rationale: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOUNDED CONTEXTS
+# Domain-driven design bounded contexts
+# ═══════════════════════════════════════════════════════════════════════════════
+
+bounded_contexts:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SHARED SERVICES
+  # Cross-cutting concerns shared by all products
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  shared_services:
+    
+    - name: "auth"
+      display_name: "Authentication & Identity"
+      description: "Unified authentication and identity management"
+      
+      repository:
+        name: "{{platform}}-auth"
+        visibility: "private"
+        
+      type: "shared_service"
+      criticality: "critical"
+      
+      responsibilities:
+        - "User registration and authentication"
+        - "OAuth provider integration (Google, Apple, GitHub, etc.)"
+        - "Session management and token issuance"
+        - "API key management"
+        - "Organization/tenant management"
+        - "Role and permission management"
+        - "SSO support (SAML 2.0, OIDC)"
+        - "MFA/2FA"
+        - "Password policies"
+        - "Account recovery"
+        
+      domain_model:
+        entities:
+          - name: "User"
+            owned: true
+            attributes:
+              - id
+              - email
+              - password_hash
+              - email_verified
+              - mfa_enabled
+              - created_at
+              - updated_at
+              
+          - name: "Organization"
+            owned: true
+            attributes:
+              - id
+              - name
+              - slug
+              - plan
+              - settings
+              - created_at
+              
+          - name: "Membership"
+            owned: true
+            attributes:
+              - user_id
+              - organization_id
+              - role
+              - permissions
+              - created_at
+              
+          - name: "Session"
+            owned: true
+            attributes:
+              - id
+              - user_id
+              - token_hash
+              - expires_at
+              - created_at
+              
+          - name: "ApiKey"
+            owned: true
+            attributes:
+              - id
+              - organization_id
+              - name
+              - key_hash
+              - scopes
+              - last_used_at
+              
+      api_surface:
+        internal:
+          - endpoint: "/internal/validate-token"
+            description: "Validate JWT for other services"
+          - endpoint: "/internal/user/{id}"
+            description: "Get user details"
+          - endpoint: "/internal/permissions/{user_id}/{org_id}"
+            description: "Get user permissions in org"
+            
+        external:
+          - endpoint: "POST /auth/register"
+            description: "User registration"
+          - endpoint: "POST /auth/login"
+            description: "User login"
+          - endpoint: "POST /auth/logout"
+            description: "User logout"
+          - endpoint: "POST /auth/refresh"
+            description: "Refresh tokens"
+          - endpoint: "GET /auth/oauth/{provider}"
+            description: "OAuth initiation"
+          - endpoint: "GET /auth/oauth/{provider}/callback"
+            description: "OAuth callback"
+          - endpoint: "GET /organizations"
+            description: "List user organizations"
+          - endpoint: "POST /organizations"
+            description: "Create organization"
+          - endpoint: "GET /api-keys"
+            description: "List API keys"
+          - endpoint: "POST /api-keys"
+            description: "Create API key"
+            
+      database:
+        name: "auth_db"
+        type: "postgresql"
+        
+      dependencies: []        # Auth has no dependencies
+      
+      white_label_config:
+        standalone_deployable: true
+        customizable:
+          - branding:
+              - logo_url
+              - favicon_url
+              - primary_color
+              - secondary_color
+          - templates:
+              - login_page
+              - register_page
+              - email_templates
+          - domain:
+              - custom_domain
+              - ssl_certificate
+          - providers:
+              - oauth_providers
+              - mfa_providers
+        tenant_isolation: "schema"    # row | schema | database
+        
+    - name: "billing"
+      display_name: "Billing & Subscriptions"
+      description: "Unified billing, subscriptions, and usage tracking"
+      
+      repository:
+        name: "{{platform}}-billing"
+        visibility: "private"
+        
+      type: "shared_service"
+      criticality: "high"
+      
+      responsibilities:
+        - "Subscription management"
+        - "Usage tracking and metering"
+        - "Invoice generation"
+        - "Payment processing"
+        - "Plan management"
+        - "Billing alerts"
+        - "Revenue reporting"
+        
+      domain_model:
+        entities:
+          - name: "Subscription"
+            owned: true
+          - name: "Invoice"
+            owned: true
+          - name: "PaymentMethod"
+            owned: true
+          - name: "UsageRecord"
+            owned: true
+          - name: "Plan"
+            owned: true
+            
+      api_surface:
+        internal:
+          - endpoint: "/internal/subscription/{org_id}"
+            description: "Get org subscription status"
+          - endpoint: "/internal/usage/record"
+            description: "Record usage event"
+          - endpoint: "/internal/limits/{org_id}"
+            description: "Get org limits"
+            
+        external:
+          - endpoint: "GET /billing/subscription"
+            description: "Get current subscription"
+          - endpoint: "POST /billing/subscribe"
+            description: "Create subscription"
+          - endpoint: "GET /billing/invoices"
+            description: "List invoices"
+          - endpoint: "GET /billing/usage"
+            description: "Get usage summary"
+            
+      database:
+        name: "billing_db"
+        type: "postgresql"
+        
+      dependencies:
+        - service: "auth"
+          for: "Organization and user context"
+          
+      integrations:
+        - name: "stripe"
+          type: "payment_processor"
+          required: true
+          
+      white_label_config:
+        standalone_deployable: true
+        customizable:
+          - branding:
+              - invoice_logo
+              - invoice_footer
+          - payment:
+              - stripe_account (connect)
+              - payment_methods
+              
+    - name: "notifications"
+      display_name: "Notification Service"
+      description: "Unified notification delivery across all channels"
+      
+      repository:
+        name: "{{platform}}-notifications"
+        visibility: "private"
+        
+      type: "shared_service"
+      criticality: "high"
+      
+      responsibilities:
+        - "Email delivery"
+        - "SMS delivery"
+        - "Push notifications"
+        - "In-app notifications"
+        - "Webhook delivery"
+        - "Template management"
+        - "Delivery tracking"
+        - "Preference management"
+        
+      domain_model:
+        entities:
+          - name: "Notification"
+            owned: true
+          - name: "Template"
+            owned: true
+          - name: "DeliveryAttempt"
+            owned: true
+          - name: "Preference"
+            owned: true
+          - name: "Webhook"
+            owned: true
+            
+      api_surface:
+        internal:
+          - endpoint: "POST /internal/send"
+            description: "Send notification"
+          - endpoint: "POST /internal/send-batch"
+            description: "Send batch notifications"
+            
+        external:
+          - endpoint: "GET /notifications"
+            description: "List notifications"
+          - endpoint: "PUT /notifications/{id}/read"
+            description: "Mark as read"
+          - endpoint: "GET /preferences"
+            description: "Get notification preferences"
+          - endpoint: "PUT /preferences"
+            description: "Update preferences"
+            
+      database:
+        name: "notifications_db"
+        type: "postgresql"
+        
+      dependencies:
+        - service: "auth"
+          for: "User context"
+          
+      integrations:
+        - name: "sendgrid"
+          type: "email"
+          required: true
+        - name: "twilio"
+          type: "sms"
+          required: false
+        - name: "firebase"
+          type: "push"
+          required: false
+          
+      white_label_config:
+        standalone_deployable: true
+        customizable:
+          - templates:
+              - email_templates
+              - sms_templates
+          - providers:
+              - email_provider
+              - sms_provider
+          - branding:
+              - from_email
+              - from_name
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PRODUCT CONTEXTS
+  # Individual products/services in the platform
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  products:
+    
+    - name: ""                # e.g., "merchant-dashboard"
+      display_name: ""
+      description: ""
+      
+      repository:
+        name: "{{platform}}-{{name}}"
+        visibility: "private"
+        
+      type: "product"
+      criticality: ""         # critical | high | medium | low
+      
+      target_users:
+        - user_type: ""
+          description: ""
+          
+      responsibilities: []
+      
+      domain_model:
+        entities:
+          - name: ""
+            owned: true       # This context owns this entity
+            attributes: []
+            
+        # Entities referenced from other contexts
+        references:
+          - entity: "User"
+            from: "auth"
+            relationship: ""
+            
+      api_surface:
+        public: []
+        internal: []
+        
+      database:
+        name: "{{name}}_db"
+        type: "postgresql"
+        
+      dependencies:
+        - service: "auth"
+          for: "Authentication"
+        - service: "billing"
+          for: "Subscription checks"
+        - service: "notifications"
+          for: "User notifications"
+          
+      white_label_config:
+        standalone_deployable: true
+        customizable:
+          - branding: []
+          - features: []
+          - domain: []
+        requires_shared_services:
+          - "auth"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UNIFIED AUTHENTICATION
+# Shared authentication architecture across all services
+# ═══════════════════════════════════════════════════════════════════════════════
+
+unified_auth:
+  
+  architecture: "centralized"
+  description: |
+    All services share a single authentication service. Users authenticate
+    once and can access any service they have permissions for.
+    
+  identity_model:
+    
+    user:
+      description: "A person using the platform"
+      fields:
+        - name: "id"
+          type: "uuid"
+          description: "Unique identifier"
+        - name: "email"
+          type: "string"
+          description: "Primary email, unique"
+        - name: "password_hash"
+          type: "string"
+          description: "Bcrypt hashed password"
+        - name: "name"
+          type: "string"
+          description: "Display name"
+        - name: "avatar_url"
+          type: "string"
+          description: "Profile picture URL"
+        - name: "email_verified"
+          type: "boolean"
+          description: "Email verification status"
+        - name: "mfa_enabled"
+          type: "boolean"
+          description: "MFA status"
+        - name: "last_login_at"
+          type: "timestamp"
+          description: "Last login time"
+        - name: "created_at"
+          type: "timestamp"
+          description: "Account creation time"
+          
+    organization:
+      description: "A tenant/workspace in the platform"
+      fields:
+        - name: "id"
+          type: "uuid"
+        - name: "name"
+          type: "string"
+        - name: "slug"
+          type: "string"
+          description: "URL-friendly identifier"
+        - name: "plan"
+          type: "string"
+          description: "Subscription plan"
+        - name: "settings"
+          type: "jsonb"
+          description: "Organization settings"
+        - name: "created_at"
+          type: "timestamp"
+          
+    membership:
+      description: "User's membership in an organization"
+      fields:
+        - name: "user_id"
+          type: "uuid"
+        - name: "organization_id"
+          type: "uuid"
+        - name: "role"
+          type: "string"
+          description: "Role in organization"
+        - name: "permissions"
+          type: "string[]"
+          description: "Explicit permissions"
+        - name: "created_at"
+          type: "timestamp"
+          
+  token_strategy:
+    
+    type: "jwt"
+    algorithm: "RS256"
+    
+    access_token:
+      ttl: "15m"
+      claims:
+        standard:
+          - sub           # User ID
+          - iat           # Issued at
+          - exp           # Expiration
+          - iss           # Issuer (auth service URL)
+          - aud           # Audience (platform name)
+        custom:
+          - org_id        # Current organization ID
+          - org_slug      # Current organization slug
+          - role          # Role in organization
+          - permissions   # Resolved permissions array
+          
+    refresh_token:
+      ttl: "7d"
+      storage: "database"
+      rotation: true
+      
+  cross_service_auth:
+    
+    method: "token_passthrough"
+    description: |
+      All services validate the same JWT. The auth service signs tokens
+      with a private key, and all services verify with the public key.
+      
+    token_validation:
+      - "Verify signature with public key"
+      - "Check expiration"
+      - "Validate issuer and audience"
+      - "Extract claims"
+      
+    service_to_service:
+      method: "internal_api_key"
+      description: |
+        Services authenticate to each other using internal API keys
+        for server-to-server communication.
+        
+  session_management:
+    
+    store: "redis"
+    strategy: "sliding_window"
+    
+    session_data:
+      - user_id
+      - organization_id
+      - created_at
+      - last_activity
+      - ip_address
+      - user_agent
+      
+    concurrent_sessions: "unlimited"
+    session_timeout: "30d"
+    
+  sso_support:
+    
+    saml:
+      enabled: true
+      role: "service_provider"
+      
+    oidc:
+      enabled: true
+      role: "relying_party"
+      
+  oauth_providers:
+    - provider: "google"
+      enabled: true
+    - provider: "github"
+      enabled: true
+    - provider: "microsoft"
+      enabled: true
+    - provider: "apple"
+      enabled: false
+      
+  mfa:
+    methods:
+      - type: "totp"
+        enabled: true
+      - type: "sms"
+        enabled: true
+      - type: "email"
+        enabled: true
+    backup_codes: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CROSS-CUTTING CONCERNS
+# Shared infrastructure and patterns
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cross_cutting:
+  
+  # API Gateway
+  api_gateway:
+    
+    type: "unified"
+    technology: "kong"        # kong | traefik | nginx | custom
+    
+    responsibilities:
+      - "Request routing to services"
+      - "Authentication (JWT validation)"
+      - "Rate limiting"
+      - "Request/response transformation"
+      - "API versioning"
+      - "CORS handling"
+      - "Request logging"
+      
+    routing:
+      strategy: "path_based"
+      rules:
+        - path: "/api/auth/*"
+          service: "auth"
+        - path: "/api/billing/*"
+          service: "billing"
+        - path: "/api/notifications/*"
+          service: "notifications"
+        # Products...
+        
+  # Shared Libraries
+  shared_libraries:
+    
+    - name: "{{platform}}-common"
+      repository: "{{platform}}-common"
+      description: "Shared code across all services"
+      
+      contains:
+        - "Auth middleware (JWT validation)"
+        - "Error types and handling"
+        - "Logging utilities"
+        - "Tracing setup"
+        - "Common types/interfaces"
+        - "Configuration loading"
+        - "Health check endpoints"
+        
+    - name: "{{platform}}-sdk-typescript"
+      repository: "{{platform}}-sdk"
+      description: "TypeScript SDK for API consumers"
+      
+      contains:
+        - "API client"
+        - "Type definitions"
+        - "Authentication helpers"
+        
+    - name: "{{platform}}-sdk-python"
+      repository: "{{platform}}-sdk-python"
+      description: "Python SDK for API consumers"
+      
+  # Event Bus
+  event_bus:
+    
+    type: "async"
+    technology: "rabbitmq"    # rabbitmq | kafka | sqs | redis-streams
+    
+    patterns:
+      - "Domain events (within bounded context)"
+      - "Integration events (cross-context)"
+      - "Saga orchestration"
+      
+    event_schema:
+      format: "cloudevents"
+      
+    example_events:
+      - event: "user.created"
+        source: "auth"
+        consumers: ["notifications", "billing"]
+      - event: "subscription.changed"
+        source: "billing"
+        consumers: ["auth", "notifications"]
+      - event: "notification.sent"
+        source: "notifications"
+        consumers: []
+        
+  # Observability
+  observability:
+    
+    tracing:
+      technology: "opentelemetry"
+      collector: "jaeger"
+      correlation: "trace_id propagated across all services"
+      
+    logging:
+      format: "structured_json"
+      aggregation: "elasticsearch"
+      retention: "30d"
+      
+    metrics:
+      technology: "prometheus"
+      visualization: "grafana"
+      
+    alerting:
+      technology: "alertmanager"
+      channels:
+        - slack
+        - pagerduty
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPOSITORY STRUCTURE
+# How code is organized
+# ═══════════════════════════════════════════════════════════════════════════════
+
+repository_structure:
+  
+  organization: "{{platform}}"
+  
+  repositories:
+    
+    # Platform orchestration (meta-repo)
+    - name: "{{platform}}-platform"
+      type: "meta"
+      description: "Platform orchestration and deployment"
+      
+      structure:
+        - path: "/"
+          contents:
+            - "README.md"
+            - "docker-compose.yaml"
+            - "docker-compose.dev.yaml"
+            - "docker-compose.test.yaml"
+            - "Makefile"
+            
+        - path: "/spec"
+          contents:
+            - "package.yaml"
+            - "architecture/"
+            - "business/"
+            - "software/"
+            - "dsl/"
+            - "tests/"
+            
+        - path: "/infra"
+          contents:
+            - "terraform/"
+            - "kubernetes/"
+            - "helm/"
+            
+        - path: "/scripts"
+          contents:
+            - "setup.sh"
+            - "migrate.sh"
+            - "seed.sh"
+            
+        - path: "/docs"
+          contents:
+            - "architecture.md"
+            - "deployment.md"
+            - "development.md"
+            
+    # Each service gets its own repo
+    # (Auth, Billing, Notifications, Products...)
+    
+  # Individual service repository structure
+  service_structure:
+    
+    standard:
+      - path: "/"
+        contents:
+          - "README.md"
+          - "Dockerfile"
+          - "Cargo.toml"         # or package.json
+          - ".env.example"
+          
+      - path: "/src"
+        contents:
+          - "main.rs"
+          - "config/"
+          - "routes/"
+          - "services/"
+          - "models/"
+          - "middleware/"
+          
+      - path: "/spec"
+        contents:
+          - "data.yaml"          # Service-specific DSL
+          - "api.yaml"
+          - "logic.yaml"
+          
+      - path: "/tests"
+        contents:
+          - "api/"
+          - "factories/"
+          - "mocks/"
+          
+      - path: "/migrations"
+        contents:
+          - "*.sql"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WHITE-LABEL ARCHITECTURE
+# Support for standalone deployment and customization
+# ═══════════════════════════════════════════════════════════════════════════════
+
+white_label:
+  
+  strategy: "configuration_driven"
+  description: |
+    All customization is driven by configuration, not code changes.
+    Each tenant/deployment can customize appearance, behavior, and
+    integrations without forking the codebase.
+    
+  # Customization Layers
+  customization_layers:
+    
+    - layer: "branding"
+      scope: "visual"
+      description: "Visual appearance customization"
+      
+      configurable:
+        - key: "logo_url"
+          type: "url"
+          description: "Company logo"
+        - key: "favicon_url"
+          type: "url"
+          description: "Browser favicon"
+        - key: "primary_color"
+          type: "color"
+          description: "Primary brand color"
+        - key: "secondary_color"
+          type: "color"
+          description: "Secondary brand color"
+        - key: "font_family"
+          type: "string"
+          description: "Custom font"
+          
+      storage: "tenant_settings"
+      cache: true
+      
+    - layer: "domain"
+      scope: "infrastructure"
+      description: "Custom domain configuration"
+      
+      configurable:
+        - key: "custom_domain"
+          type: "domain"
+          description: "Custom domain (e.g., app.customer.com)"
+        - key: "ssl_certificate"
+          type: "certificate"
+          description: "SSL certificate (or auto-provision)"
+        - key: "email_domain"
+          type: "domain"
+          description: "Custom email sending domain"
+          
+      requires: "dns_configuration"
+      
+    - layer: "features"
+      scope: "functionality"
+      description: "Feature availability customization"
+      
+      configurable:
+        - key: "feature_flags"
+          type: "object"
+          description: "Enable/disable features"
+        - key: "enabled_modules"
+          type: "array"
+          description: "Which modules are active"
+        - key: "custom_workflows"
+          type: "array"
+          description: "Custom automation workflows"
+          
+      storage: "tenant_settings"
+      
+    - layer: "integrations"
+      scope: "connectivity"
+      description: "Third-party integration customization"
+      
+      configurable:
+        - key: "oauth_providers"
+          type: "object"
+          description: "Custom OAuth app credentials"
+        - key: "payment_provider"
+          type: "object"
+          description: "Stripe Connect or custom"
+        - key: "email_provider"
+          type: "object"
+          description: "Custom email provider"
+        - key: "webhooks"
+          type: "array"
+          description: "Custom webhook endpoints"
+          
+      storage: "tenant_secrets"
+      
+  # Tenant Isolation
+  tenant_isolation:
+    
+    data:
+      strategy: "schema_per_tenant"
+      options:
+        - name: "row_level"
+          description: "All tenants in same tables, filtered by tenant_id"
+          pros: ["Simple", "Efficient"]
+          cons: ["Risk of data leaks", "Complex queries"]
+          
+        - name: "schema_per_tenant"
+          description: "Each tenant gets own schema in same database"
+          pros: ["Good isolation", "Moderate complexity"]
+          cons: ["Schema migration complexity"]
+          
+        - name: "database_per_tenant"
+          description: "Each tenant gets own database"
+          pros: ["Complete isolation", "Easy backup/restore"]
+          cons: ["Resource intensive", "Complex management"]
+          
+    compute:
+      strategy: "shared"
+      options:
+        - name: "shared"
+          description: "All tenants share same compute"
+        - name: "dedicated"
+          description: "Enterprise tenants get dedicated instances"
+          
+    storage:
+      strategy: "prefixed"
+      description: "Object storage prefixed by tenant_id"
+      
+  # Standalone Deployment
+  standalone_deployment:
+    
+    description: |
+      Each product can be deployed standalone for clients who want
+      to run the software on their own infrastructure (on-premise
+      or private cloud).
+      
+    requirements:
+      - "Self-contained Docker images"
+      - "Environment-based configuration"
+      - "Database migration scripts"
+      - "Seed data scripts"
+      - "Health check endpoints"
+      - "Backup/restore procedures"
+      
+    deployment_options:
+      
+      - name: "docker_compose"
+        complexity: "low"
+        description: "Single-server deployment"
+        suitable_for: "Small deployments, development"
+        
+      - name: "kubernetes_helm"
+        complexity: "medium"
+        description: "Kubernetes deployment via Helm charts"
+        suitable_for: "Production, scaling"
+        
+      - name: "terraform_module"
+        complexity: "high"
+        description: "Full infrastructure as code"
+        suitable_for: "Enterprise, custom cloud"
+        
+    configuration:
+      method: "environment_variables"
+      override: "config_file"
+      secrets: "external_secret_manager"
+      
+    documentation:
+      - "Deployment guide"
+      - "Configuration reference"
+      - "Backup/restore procedures"
+      - "Upgrade procedures"
+      - "Troubleshooting guide"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHANGE-FRIENDLY ARCHITECTURE
+# Patterns for flexibility and evolvability
+# ═══════════════════════════════════════════════════════════════════════════════
+
+change_friendly:
+  
+  principles:
+    - "Loose coupling between services"
+    - "High cohesion within services"
+    - "Contract-first API design"
+    - "Event-driven communication"
+    - "Configuration over code"
+    - "Feature flags for gradual rollout"
+    
+  patterns:
+    
+    - pattern: "API versioning"
+      description: "Support multiple API versions simultaneously"
+      implementation: "URL path versioning (/api/v1, /api/v2)"
+      
+    - pattern: "Feature flags"
+      description: "Toggle features without deployment"
+      implementation: "LaunchDarkly or custom feature flag service"
+      
+    - pattern: "Database migrations"
+      description: "Safe, reversible schema changes"
+      implementation: "SQL migrations with up/down scripts"
+      
+    - pattern: "Event sourcing (optional)"
+      description: "Store state changes as events"
+      implementation: "For audit-critical domains"
+      
+    - pattern: "CQRS (optional)"
+      description: "Separate read and write models"
+      implementation: "For high-scale read scenarios"
+      
+  anti_patterns_to_avoid:
+    - "Shared database between services"
+    - "Synchronous service-to-service calls for everything"
+    - "Hardcoded configuration"
+    - "Tight coupling to specific vendors"
+    - "Monolithic frontend"

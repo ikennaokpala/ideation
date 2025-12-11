@@ -1,0 +1,614 @@
+# BUSINESS COMPETITOR ANALYSIS SCHEMA
+# Comprehensive analysis of a competitor's business model, market position, and strategy
+#
+# This schema captures everything needed to understand HOW a competitor makes money,
+# WHO they sell to, and WHERE they're going.
+
+$schema: "https://sparc-dsl.dev/schemas/business-competitor.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  company_name: ""
+  website: ""
+  founded: ""
+  headquarters: ""
+  analysis_date: ""
+  analyst: "sparc-v6.1"
+  confidence_level: ""        # high | medium | low
+  data_sources: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPANY PROFILE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+company_profile:
+  
+  stage: ""                   # pre-seed | seed | series-a | series-b | series-c | growth | mature | declining
+  
+  funding:
+    total_raised: ""
+    last_round:
+      type: ""
+      amount: ""
+      date: ""
+      lead_investor: ""
+      valuation: ""
+    investors:
+      - name: ""
+        type: ""              # vc | angel | strategic | pe | corporate
+        notable: ""
+        
+  team:
+    total_employees: ""
+    engineering_percentage: ""
+    growth_rate: ""
+    glassdoor_rating: ""
+    hiring_velocity: ""
+    
+  key_leadership:
+    - name: ""
+      role: ""
+      background: ""
+      notable: ""
+      linkedin: ""
+      
+  culture_signals:
+    - signal: ""
+      source: ""
+      implication: ""
+      
+  recent_news:
+    - date: ""
+      headline: ""
+      source: ""
+      significance: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MARKET ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+market_analysis:
+  
+  tam:
+    value: ""
+    year: ""
+    source: ""
+    growth_rate: ""
+    
+  sam:
+    value: ""
+    definition: ""
+    
+  som:
+    value: ""
+    current_capture: ""
+    growth_trajectory: ""
+    
+  market_dynamics:
+    growth_rate: ""
+    stage: ""                 # emerging | growing | mature | declining
+    consolidation: ""         # fragmented | consolidating | oligopoly | monopoly
+    regulatory_environment: ""
+    barriers_to_entry: ""
+    
+  competitive_intensity:
+    level: ""                 # low | moderate | high | intense
+    number_of_competitors: ""
+    main_battlegrounds:
+      - battleground: ""
+        intensity: ""
+        our_position: ""
+        
+  market_position:
+    position: ""              # leader | challenger | niche | emerging | declining
+    market_share_estimate: ""
+    trend: ""                 # gaining | stable | losing
+    evidence:
+      - evidence: ""
+        source: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUSINESS MODEL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+business_model:
+  
+  type: ""                    # saas | marketplace | transactional | freemium | enterprise | hybrid | usage-based
+  
+  revenue_streams:
+    - name: ""
+      type: ""                # subscription | usage | transaction | advertising | services | licensing
+      percentage_of_revenue: ""
+      trend: ""
+      margin: ""
+      description: ""
+      
+  pricing:
+    model: ""                 # flat | tiered | usage | per-seat | hybrid | custom
+    transparency: ""          # public | semi-public | sales-only
+    
+    tiers:
+      - name: ""
+        price: ""
+        billing: ""           # monthly | annual | usage | one-time
+        target_segment: ""
+        features:
+          included:
+            - feature: ""
+              limit: ""
+          excluded:
+            - feature: ""
+        limits:
+          - resource: ""
+            limit: ""
+        value_proposition: ""
+        conversion_from: ""
+        
+    discounting:
+      annual_discount: ""
+      volume_discount: ""
+      startup_program:
+        exists: true
+        discount: ""
+        eligibility: ""
+        duration: ""
+      nonprofit_discount: ""
+      education_discount: ""
+      enterprise_negotiation: ""
+      
+  unit_economics:
+    arr_estimate: ""
+    arr_growth: ""
+    mrr_estimate: ""
+    revenue_per_employee: ""
+    cac: ""
+    cac_by_channel:
+      - channel: ""
+        cac: ""
+    ltv: ""
+    ltv_by_segment:
+      - segment: ""
+        ltv: ""
+    ltv_cac_ratio: ""
+    payback_period: ""
+    gross_margin: ""
+    contribution_margin: ""
+    net_revenue_retention: ""
+    gross_revenue_retention: ""
+    logo_churn: ""
+    revenue_churn: ""
+    arpu: ""
+    arppu: ""
+    
+  monetization_levers:
+    - lever: ""
+      current_exploitation: ""
+      potential: ""
+      
+  revenue_concentration:
+    top_customer_percentage: ""
+    top_10_percentage: ""
+    concentration_risk: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CUSTOMER ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+customer_analysis:
+  
+  total_customers_estimate: ""
+  paying_customers_estimate: ""
+  
+  segments:
+    - name: ""
+      size_estimate: ""
+      percentage_of_customers: ""
+      percentage_of_revenue: ""
+      characteristics:
+        company_size: ""
+        industry: []
+        geography: []
+        tech_sophistication: ""
+        budget: ""
+      needs:
+        - need: ""
+          importance: ""
+          how_served: ""
+      pain_points:
+        - pain: ""
+          severity: ""
+          addressed: ""
+      willingness_to_pay: ""
+      acquisition_difficulty: ""
+      acquisition_channels: []
+      retention_rate: ""
+      expansion_potential: ""
+      
+  ideal_customer_profile:
+    company_size: ""
+    employee_count: ""
+    annual_revenue: ""
+    industry: []
+    geography: []
+    tech_stack: []
+    decision_maker:
+      title: ""
+      department: ""
+      concerns: []
+      motivations: []
+    buying_trigger: []
+    budget_range: ""
+    sales_cycle: ""
+    
+  customer_journey:
+    awareness:
+      channels: []
+      content_types: []
+      time_in_stage: ""
+    consideration:
+      evaluation_criteria: []
+      competitors_considered: []
+      timeline: ""
+      stakeholders: []
+      key_questions: []
+    decision:
+      decision_maker: ""
+      influencers: []
+      approval_process: ""
+      deal_blockers: []
+      typical_deal_size: ""
+    onboarding:
+      time_to_value: ""
+      implementation_effort: ""
+      success_criteria: []
+      common_obstacles: []
+    retention:
+      engagement_patterns: []
+      health_indicators: []
+      churn_triggers: []
+      churn_rate: ""
+    expansion:
+      upsell_triggers: []
+      cross_sell_opportunities: []
+      expansion_revenue_rate: ""
+      
+  notable_customers:
+    - name: ""
+      segment: ""
+      use_case: ""
+      public_reference: true
+      case_study_url: ""
+      logo_on_website: true
+      
+  customer_sentiment:
+    nps_estimate: ""
+    g2_rating: ""
+    g2_review_count: ""
+    capterra_rating: ""
+    trustpilot_rating: ""
+    common_complaints:
+      - complaint: ""
+        frequency: ""
+        severity: ""
+        source: ""
+    common_praise:
+      - praise: ""
+        frequency: ""
+        source: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GO-TO-MARKET STRATEGY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+go_to_market:
+  
+  primary_motion: ""          # product-led | sales-led | marketing-led | community-led | partner-led | hybrid
+  
+  sales:
+    model: ""
+    cycle_length: ""
+    team_size_estimate: ""
+    quota_per_rep: ""
+    territories: []
+    specialization: ""
+    tools_used: []
+    
+  marketing:
+    positioning: ""
+    tagline: ""
+    key_messages:
+      - message: ""
+        audience: ""
+        channel: ""
+    tone: ""
+    brand_strength: ""
+    brand_recognition: ""
+    channels:
+      - channel: ""
+        investment_level: ""
+        effectiveness: ""
+        cac_contribution: ""
+    content_strategy:
+      primary_formats: []
+      publishing_frequency: ""
+      quality_level: ""
+      seo_strength: ""
+      notable_content:
+        - title: ""
+          type: ""
+          url: ""
+          performance: ""
+    community:
+      presence: ""
+      platforms: []
+      size: ""
+      engagement_level: ""
+    events:
+      hosted:
+        - event: ""
+          frequency: ""
+          size: ""
+      sponsored:
+        - event: ""
+          level: ""
+      speaking:
+        - event: ""
+          topic: ""
+          
+  partnerships:
+    - partner_type: ""
+      notable_partners: []
+      importance: ""
+      revenue_contribution: ""
+      
+  international:
+    primary_markets: []
+    expansion_strategy: ""
+    localization_depth: ""
+    local_teams: []
+    local_payment_methods: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPETITIVE POSITIONING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+competitive_positioning:
+  
+  moat:
+    type: ""
+    strength: ""
+    sustainability: ""
+    description: ""
+    evidence:
+      - evidence: ""
+        source: ""
+        
+  differentiation:
+    - factor: ""
+      description: ""
+      strength: ""
+      defensibility: ""
+      importance_to_customer: ""
+      evidence: ""
+      
+  positioning_statement: ""
+  
+  value_proposition:
+    primary: ""
+    supporting:
+      - proposition: ""
+        for_segment: ""
+    proof_points:
+      - proof: ""
+        type: ""
+        
+  vulnerabilities:
+    - weakness: ""
+      description: ""
+      severity: ""
+      exploitability: ""
+      how_to_exploit: ""
+      evidence: ""
+      
+  win_loss:
+    primary_win_reasons:
+      - reason: ""
+        frequency: ""
+        against_whom: []
+    primary_loss_reasons:
+      - reason: ""
+        frequency: ""
+        to_whom: []
+    competitive_win_rate: ""
+    
+  positioning_against:
+    - competitor: ""
+      their_positioning: ""
+      our_counter: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COGNITIVE ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cognitive_analysis:
+  
+  adversarial:
+    existential_threats:
+      - threat: ""
+        probability: ""
+        timeline: ""
+        trigger: ""
+    competitive_vulnerabilities:
+      - vulnerability: ""
+        who_could_exploit: ""
+        how: ""
+    market_risks:
+      - risk: ""
+        trigger: ""
+        impact: ""
+    execution_risks:
+      - risk: ""
+        indicators: []
+        likelihood: ""
+    black_swan_scenarios:
+      - scenario: ""
+        probability: ""
+        impact: ""
+        our_response: ""
+        
+  contrarian:
+    common_assumptions:
+      - assumption: ""
+        believers: ""
+        why_might_be_wrong: ""
+        evidence_against: ""
+    overlooked_opportunities:
+      - opportunity: ""
+        why_overlooked: ""
+        size: ""
+    unconventional_moves:
+      - move: ""
+        why_unconventional: ""
+        potential_impact: ""
+    contrarian_bets:
+      - bet: ""
+        against_consensus: ""
+        rationale: ""
+        
+  temporal:
+    history:
+      founding_story: ""
+      key_pivots:
+        - date: ""
+          from: ""
+          to: ""
+          reason: ""
+          outcome: ""
+      major_milestones:
+        - date: ""
+          milestone: ""
+          significance: ""
+    current_trajectory: ""
+    projections:
+      year_1:
+        focus: ""
+        likely_moves: []
+        challenges: []
+        opportunities: []
+      year_3:
+        focus: ""
+        likely_position: ""
+        threats: []
+      year_5:
+        focus: ""
+        scenarios:
+          - scenario: ""
+            probability: ""
+            implications_for_us: ""
+    disruption_risk:
+      level: ""
+      potential_disruptors:
+        - disruptor: ""
+          mechanism: ""
+          timeline: ""
+          
+  first_principles:
+    core_value_created: ""
+    fundamental_constraints: []
+    assumptions_to_question:
+      - assumption: ""
+        validity: ""
+    irreducible_truths: []
+    
+  network_analysis:
+    type: ""
+    network_type: ""
+    current_strength: ""
+    reinforcing_loops:
+      - loop: ""
+        strength: ""
+    network_density: ""
+    critical_mass_achieved: ""
+    multi_homing_cost: ""
+    
+  counterfactual:
+    key_decisions:
+      - decision: ""
+        date: ""
+        alternative: ""
+        likely_outcome_if_different: ""
+        learning: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRODUCT BRIEF
+# ═══════════════════════════════════════════════════════════════════════════════
+
+product_brief:
+  core_offering: ""
+  key_features:
+    - feature: ""
+      strength: ""
+  platform_vs_product: ""
+  technical_reputation: ""
+  innovation_velocity: ""
+  api_first: true
+  integration_ecosystem_size: ""
+  mobile_experience: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SWOT SUMMARY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+swot:
+  strengths:
+    - strength: ""
+      importance: ""
+      evidence: ""
+      sustainable: ""
+  weaknesses:
+    - weakness: ""
+      severity: ""
+      exploitable: ""
+      evidence: ""
+  opportunities:
+    - opportunity: ""
+      size: ""
+      fit: ""
+      timing: ""
+  threats:
+    - threat: ""
+      probability: ""
+      impact: ""
+      timeline: ""
+      our_opportunity: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# KEY TAKEAWAYS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+takeaways:
+  learn_from:
+    - lesson: ""
+      application: ""
+      priority: ""
+  avoid:
+    - mistake: ""
+      why: ""
+  exploit:
+    - gap: ""
+      how: ""
+      difficulty: ""
+      timing: ""
+  differentiate_on:
+    - factor: ""
+      why_winnable: ""
+      evidence: ""
+  overall_assessment:
+    threat_level: ""
+    respect_level: ""
+    primary_learning: ""
+    watch_for: []

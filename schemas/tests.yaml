@@ -1,0 +1,992 @@
+# TESTS.YAML DSL SCHEMA
+# Executable specification for API integration tests
+# 
+# Generates:
+# - Test files (Jest, Vitest, pytest, Rust tests)
+# - Factory definitions
+# - External service mocks (WebMock fixtures)
+#
+# PHILOSOPHY:
+# - NO unit tests - API integration tests only
+# - Follow ALL cyclomatic paths from simulation
+# - Factories over fixtures
+# - ONLY mock external services
+# - NEVER mock database, filesystem, internal services
+# - Live database interactions for all tests
+
+$schema: "https://sparc-dsl.dev/schemas/tests.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""
+  description: ""
+  version: "0.1.0"
+  
+  framework:
+    language: "rust"          # rust | typescript | python
+    runner: "cargo-test"      # cargo-test | jest | vitest | pytest
+    http_client: "reqwest"    # reqwest | supertest | httpx
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTING PHILOSOPHY - ENFORCED RULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+philosophy:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Test Level - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  test_level: "api_integration_only"
+  
+  description: |
+    All tests are API-level integration tests that exercise the full stack
+    through HTTP endpoints. There are NO unit tests. Every test makes real
+    HTTP requests and verifies responses, database state, and side effects.
+    
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Coverage Requirement - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  coverage:
+    type: "cyclomatic_path"
+    requirement: "all_paths"
+    
+    must_cover:
+      - "Every PATH-* from software-ideal.yaml"
+      - "Every EDGE-* case"
+      - "Every boundary condition"
+      - "Every state machine transition"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Mocking Rules - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  mocking:
+    
+    # ONLY mock these (external services)
+    allowed_mocks:
+      oauth_providers:
+        - "google"
+        - "apple"
+        - "facebook"
+        - "github"
+        - "microsoft"
+        - "twitter"
+        
+      email_providers:
+        - "sendgrid"
+        - "postmark"
+        - "mailgun"
+        - "ses"
+        
+      sms_providers:
+        - "twilio"
+        - "messagebird"
+        - "vonage"
+        
+      payment_providers:
+        - "stripe"
+        - "paypal"
+        - "braintree"
+        
+      push_providers:
+        - "firebase"
+        - "apns"
+        - "onesignal"
+        
+      storage_providers:
+        - "s3"
+        - "gcs"
+        - "azure_blob"
+        
+      other_external:
+        - "any third-party API"
+        - "external webhooks"
+        
+    # NEVER mock these (internal)
+    forbidden_mocks:
+      - "database"
+      - "cache/redis"
+      - "file_system"
+      - "message_queues"
+      - "internal_services"
+      - "internal_http_calls"
+      - "ORM/query builders"
+      - "application logic"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Data Strategy - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  data_strategy:
+    prefer: "factories"
+    fallback: "fixtures"
+    
+    factories:
+      description: |
+        Factories are the primary way to create test data. They are dynamic,
+        composable, and express the domain model clearly.
+        
+      usage: |
+        - Use factory defaults for common cases
+        - Use traits for common variations
+        - Use overrides for specific test needs
+        - Use sequences for unique values
+        
+    fixtures:
+      description: |
+        Fixtures are only used when factories cannot represent the data,
+        such as complex legacy data or binary files.
+        
+      when_to_use:
+        - "Complex legacy database state"
+        - "Binary files (images, PDFs)"
+        - "Third-party format requirements"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Database Strategy - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  database:
+    type: "real_database"
+    description: |
+      All tests hit a real database. No in-memory fakes, no mocks.
+      This catches real issues like constraint violations, query errors,
+      and data integrity problems.
+      
+    isolation_strategies:
+      
+      - name: "transaction_rollback"
+        description: "Wrap each test in a transaction, rollback at end"
+        pros:
+          - "Fastest"
+          - "Perfect isolation"
+        cons:
+          - "Cannot test code that commits"
+        implementation: |
+          #[test]
+          fn test_something() {
+              let tx = db.begin_transaction();
+              // ... test code using tx ...
+              tx.rollback(); // automatic on drop
+          }
+          
+      - name: "truncation"
+        description: "Truncate all tables between tests"
+        pros:
+          - "Works with commits"
+          - "Clean state"
+        cons:
+          - "Slower than transaction"
+        implementation: |
+          #[test]
+          fn test_something() {
+              truncate_all_tables(&db);
+              // ... test code ...
+          }
+          
+      - name: "database_per_file"
+        description: "Each test file gets its own database"
+        pros:
+          - "Parallel execution"
+          - "Complete isolation"
+        cons:
+          - "Resource intensive"
+          - "Slower setup"
+        implementation: |
+          // In test setup
+          let db = create_test_database(&format!("test_{}", file_name));
+          // In teardown
+          drop_test_database(&db);
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATABASE CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+database:
+  
+  test_database:
+    name: "{{project_name}}_test"
+    host_env: "TEST_DATABASE_HOST"
+    port_env: "TEST_DATABASE_PORT"
+    user_env: "TEST_DATABASE_USER"
+    password_env: "TEST_DATABASE_PASSWORD"
+    
+  setup:
+    - "Run all migrations"
+    - "Verify schema matches data.yaml"
+    
+  isolation: "transaction_rollback"   # Default strategy
+  
+  cleanup:
+    between_tests: "rollback"
+    between_files: "truncate"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FACTORIES
+# Test data generation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+factories:
+  
+  # Factory generator config
+  generator:
+    faker_locale: "en"
+    seed: null                        # Random seed for reproducibility
+    
+  # ─────────────────────────────────────────────────────────────────────────────
+  # User Factory
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  definitions:
+    
+    - name: "UserFactory"
+      entity_ref: "data.yaml#/entities/user"
+      table: "users"
+      
+      defaults:
+        id: "{{uuid}}"
+        email: "{{faker.internet.email}}"
+        password_hash: "{{bcrypt('TestPassword123!')}}"
+        name: "{{faker.person.fullName}}"
+        email_verified: false
+        email_verified_at: null
+        last_login_at: null
+        created_at: "{{now}}"
+        updated_at: "{{now}}"
+        deleted_at: null
+        
+      # Traits - composable variations
+      traits:
+        
+        verified:
+          email_verified: true
+          email_verified_at: "{{now}}"
+          
+        unverified:
+          email_verified: false
+          email_verified_at: null
+          
+        admin:
+          role: "admin"
+          
+        owner:
+          role: "owner"
+          
+        member:
+          role: "member"
+          
+        recently_active:
+          last_login_at: "{{now - random(1, 24) hours}}"
+          
+        inactive:
+          last_login_at: "{{now - random(60, 365) days}}"
+          
+        deleted:
+          deleted_at: "{{now}}"
+          
+        with_organization:
+          # Creates associated organization
+          organization_id: "{{create('OrganizationFactory').id}}"
+          
+        with_avatar:
+          avatar_url: "https://example.com/avatars/{{faker.string.uuid}}.jpg"
+          
+      # Sequences - unique values
+      sequences:
+        email: "user{{n}}@test.example.com"
+        
+      # Computed fields
+      computed:
+        full_email: "{{name}} <{{email}}>"
+        
+      # Associations
+      associations:
+        organization:
+          factory: "OrganizationFactory"
+          foreign_key: "organization_id"
+          
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Organization Factory
+    # ─────────────────────────────────────────────────────────────────────────────
+    
+    - name: "OrganizationFactory"
+      entity_ref: "data.yaml#/entities/organization"
+      table: "organizations"
+      
+      defaults:
+        id: "{{uuid}}"
+        name: "{{faker.company.name}}"
+        slug: "{{slugify(name)}}"
+        plan: "free"
+        settings: {}
+        created_at: "{{now}}"
+        updated_at: "{{now}}"
+        deleted_at: null
+        
+      traits:
+        free:
+          plan: "free"
+          
+        pro:
+          plan: "pro"
+          
+        enterprise:
+          plan: "enterprise"
+          settings:
+            custom_domain: true
+            sso_enabled: true
+            
+        with_owner:
+          # Creates owner user after org
+          after_create: |
+            create('UserFactory', traits: ['owner', 'verified'], overrides: {
+              organization_id: self.id
+            })
+            
+      sequences:
+        slug: "org-{{n}}"
+        
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Notification Factory
+    # ─────────────────────────────────────────────────────────────────────────────
+    
+    - name: "NotificationFactory"
+      entity_ref: "data.yaml#/entities/notification"
+      table: "notifications"
+      
+      defaults:
+        id: "{{uuid}}"
+        organization_id: "{{create('OrganizationFactory').id}}"
+        recipient_id: "{{create('ContactFactory').id}}"
+        channel: "email"
+        status: "pending"
+        content:
+          subject: "{{faker.lorem.sentence}}"
+          body: "{{faker.lorem.paragraphs(2)}}"
+        scheduled_at: null
+        sent_at: null
+        delivered_at: null
+        failed_at: null
+        created_at: "{{now}}"
+        updated_at: "{{now}}"
+        
+      traits:
+        email:
+          channel: "email"
+          content:
+            subject: "{{faker.lorem.sentence}}"
+            body: "{{faker.lorem.paragraphs(2)}}"
+            body_html: "<p>{{faker.lorem.paragraphs(2)}}</p>"
+            
+        sms:
+          channel: "sms"
+          content:
+            body: "{{faker.lorem.sentence}}"
+            
+        push:
+          channel: "push"
+          content:
+            title: "{{faker.lorem.words(3)}}"
+            body: "{{faker.lorem.sentence}}"
+            
+        pending:
+          status: "pending"
+          
+        queued:
+          status: "queued"
+          
+        sent:
+          status: "sent"
+          sent_at: "{{now}}"
+          
+        delivered:
+          status: "delivered"
+          sent_at: "{{now - 5 minutes}}"
+          delivered_at: "{{now}}"
+          
+        failed:
+          status: "failed"
+          failed_at: "{{now}}"
+          last_error: "Provider returned error: timeout"
+          
+        bounced:
+          status: "bounced"
+          sent_at: "{{now - 1 hour}}"
+          bounced_at: "{{now}}"
+          bounce_type: "hard"
+          
+        scheduled:
+          status: "pending"
+          scheduled_at: "{{now + 1 day}}"
+          
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Contact Factory
+    # ─────────────────────────────────────────────────────────────────────────────
+    
+    - name: "ContactFactory"
+      entity_ref: "data.yaml#/entities/contact"
+      table: "contacts"
+      
+      defaults:
+        id: "{{uuid}}"
+        organization_id: "{{create('OrganizationFactory').id}}"
+        email: "{{faker.internet.email}}"
+        phone: "{{faker.phone.number('+1##########')}}"
+        name: "{{faker.person.fullName}}"
+        metadata: {}
+        subscribed_email: true
+        subscribed_sms: true
+        subscribed_push: true
+        created_at: "{{now}}"
+        updated_at: "{{now}}"
+        
+      traits:
+        unsubscribed_email:
+          subscribed_email: false
+          
+        unsubscribed_all:
+          subscribed_email: false
+          subscribed_sms: false
+          subscribed_push: false
+          
+        with_metadata:
+          metadata:
+            source: "import"
+            tags: ["newsletter", "active"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXTERNAL SERVICE MOCKS
+# WebMock/Mockito fixtures for external APIs
+# ═══════════════════════════════════════════════════════════════════════════════
+
+external_mocks:
+  
+  # Mock implementation config
+  implementation:
+    library: "wiremock"       # wiremock | mockito | webmock | nock
+    
+  # ─────────────────────────────────────────────────────────────────────────────
+  # OAuth Providers
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  oauth:
+    
+    google:
+      base_url: "https://oauth2.googleapis.com"
+      
+      scenarios:
+        - name: "token_exchange_success"
+          request:
+            method: "POST"
+            path: "/token"
+            body_contains:
+              grant_type: "authorization_code"
+          response:
+            status: 200
+            body:
+              access_token: "ya29.mock_google_access_token"
+              refresh_token: "1//mock_google_refresh_token"
+              expires_in: 3600
+              token_type: "Bearer"
+              id_token: "{{jwt({sub: 'google_123', email: 'user@gmail.com', name: 'Test User'})}}"
+              
+        - name: "token_exchange_invalid_code"
+          request:
+            method: "POST"
+            path: "/token"
+            body_contains:
+              code: "invalid_code"
+          response:
+            status: 400
+            body:
+              error: "invalid_grant"
+              error_description: "Invalid authorization code"
+              
+        - name: "token_exchange_expired_code"
+          request:
+            method: "POST"
+            path: "/token"
+            body_contains:
+              code: "expired_code"
+          response:
+            status: 400
+            body:
+              error: "invalid_grant"
+              error_description: "Code has expired"
+              
+        - name: "userinfo_success"
+          request:
+            method: "GET"
+            path: "/oauth2/v3/userinfo"
+            headers:
+              Authorization: "Bearer ya29.mock_google_access_token"
+          response:
+            status: 200
+            body:
+              sub: "google_123"
+              email: "user@gmail.com"
+              email_verified: true
+              name: "Test User"
+              picture: "https://lh3.googleusercontent.com/mock"
+              
+        - name: "userinfo_invalid_token"
+          request:
+            method: "GET"
+            path: "/oauth2/v3/userinfo"
+            headers:
+              Authorization: "Bearer invalid_token"
+          response:
+            status: 401
+            body:
+              error: "invalid_token"
+              
+    apple:
+      base_url: "https://appleid.apple.com"
+      
+      scenarios:
+        - name: "token_exchange_success"
+          request:
+            method: "POST"
+            path: "/auth/token"
+          response:
+            status: 200
+            body:
+              access_token: "mock_apple_access_token"
+              token_type: "Bearer"
+              expires_in: 3600
+              refresh_token: "mock_apple_refresh_token"
+              id_token: "{{jwt({sub: 'apple_123', email: 'user@privaterelay.appleid.com'})}}"
+              
+    facebook:
+      base_url: "https://graph.facebook.com"
+      
+      scenarios:
+        - name: "token_exchange_success"
+          request:
+            method: "GET"
+            path: "/v18.0/oauth/access_token"
+          response:
+            status: 200
+            body:
+              access_token: "mock_facebook_access_token"
+              token_type: "bearer"
+              expires_in: 5184000
+              
+        - name: "user_info_success"
+          request:
+            method: "GET"
+            path: "/me"
+            query:
+              fields: "id,name,email"
+            headers:
+              Authorization: "Bearer mock_facebook_access_token"
+          response:
+            status: 200
+            body:
+              id: "facebook_123"
+              name: "Test User"
+              email: "user@facebook.com"
+              
+    github:
+      base_url: "https://github.com"
+      api_base_url: "https://api.github.com"
+      
+      scenarios:
+        - name: "token_exchange_success"
+          request:
+            method: "POST"
+            path: "/login/oauth/access_token"
+          response:
+            status: 200
+            headers:
+              Content-Type: "application/json"
+            body:
+              access_token: "gho_mock_github_token"
+              token_type: "bearer"
+              scope: "user:email"
+              
+        - name: "user_info_success"
+          base_url: "https://api.github.com"
+          request:
+            method: "GET"
+            path: "/user"
+          response:
+            status: 200
+            body:
+              id: 12345
+              login: "testuser"
+              name: "Test User"
+              email: "user@github.com"
+              avatar_url: "https://avatars.githubusercontent.com/u/12345"
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Email Providers
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  email:
+    
+    sendgrid:
+      base_url: "https://api.sendgrid.com"
+      
+      scenarios:
+        - name: "send_success"
+          request:
+            method: "POST"
+            path: "/v3/mail/send"
+          response:
+            status: 202
+            headers:
+              X-Message-Id: "mock_sg_message_{{uuid}}"
+              
+        - name: "send_invalid_email"
+          request:
+            method: "POST"
+            path: "/v3/mail/send"
+            body_contains:
+              personalizations:
+                - to:
+                    - email: "invalid-email"
+          response:
+            status: 400
+            body:
+              errors:
+                - message: "Invalid email address"
+                  field: "personalizations.0.to.0.email"
+                  
+        - name: "send_rate_limited"
+          request:
+            method: "POST"
+            path: "/v3/mail/send"
+          response:
+            status: 429
+            headers:
+              Retry-After: "60"
+            body:
+              errors:
+                - message: "Rate limit exceeded"
+                  
+        - name: "send_server_error"
+          request:
+            method: "POST"
+            path: "/v3/mail/send"
+          response:
+            status: 500
+            body:
+              errors:
+                - message: "Internal server error"
+                  
+    postmark:
+      base_url: "https://api.postmarkapp.com"
+      
+      scenarios:
+        - name: "send_success"
+          request:
+            method: "POST"
+            path: "/email"
+          response:
+            status: 200
+            body:
+              To: "{{request.body.To}}"
+              SubmittedAt: "{{now}}"
+              MessageID: "mock_pm_{{uuid}}"
+              ErrorCode: 0
+              Message: "OK"
+              
+        - name: "send_inactive_recipient"
+          request:
+            method: "POST"
+            path: "/email"
+          response:
+            status: 422
+            body:
+              ErrorCode: 406
+              Message: "Recipient is inactive"
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SMS Providers
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  sms:
+    
+    twilio:
+      base_url: "https://api.twilio.com"
+      
+      scenarios:
+        - name: "send_success"
+          request:
+            method: "POST"
+            path: "/2010-04-01/Accounts/*/Messages.json"
+          response:
+            status: 201
+            body:
+              sid: "SM_mock_{{uuid}}"
+              status: "queued"
+              to: "{{request.body.To}}"
+              from: "{{request.body.From}}"
+              body: "{{request.body.Body}}"
+              
+        - name: "send_invalid_number"
+          request:
+            method: "POST"
+            path: "/2010-04-01/Accounts/*/Messages.json"
+            body_contains:
+              To: "+1invalid"
+          response:
+            status: 400
+            body:
+              code: 21211
+              message: "Invalid 'To' Phone Number"
+              status: 400
+              
+        - name: "send_unsubscribed"
+          request:
+            method: "POST"
+            path: "/2010-04-01/Accounts/*/Messages.json"
+          response:
+            status: 400
+            body:
+              code: 21610
+              message: "Attempt to send to unsubscribed recipient"
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Payment Providers
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  payment:
+    
+    stripe:
+      base_url: "https://api.stripe.com"
+      
+      scenarios:
+        - name: "create_customer_success"
+          request:
+            method: "POST"
+            path: "/v1/customers"
+          response:
+            status: 200
+            body:
+              id: "cus_mock_{{uuid}}"
+              object: "customer"
+              email: "{{request.body.email}}"
+              created: "{{timestamp}}"
+              
+        - name: "create_subscription_success"
+          request:
+            method: "POST"
+            path: "/v1/subscriptions"
+          response:
+            status: 200
+            body:
+              id: "sub_mock_{{uuid}}"
+              object: "subscription"
+              status: "active"
+              current_period_start: "{{timestamp}}"
+              current_period_end: "{{timestamp + 30 days}}"
+              
+        - name: "payment_intent_success"
+          request:
+            method: "POST"
+            path: "/v1/payment_intents"
+          response:
+            status: 200
+            body:
+              id: "pi_mock_{{uuid}}"
+              status: "succeeded"
+              amount: "{{request.body.amount}}"
+              
+        - name: "payment_card_declined"
+          request:
+            method: "POST"
+            path: "/v1/payment_intents"
+            body_contains:
+              payment_method: "pm_card_declined"
+          response:
+            status: 402
+            body:
+              error:
+                type: "card_error"
+                code: "card_declined"
+                message: "Your card was declined"
+                decline_code: "generic_decline"
+                
+        - name: "webhook_signature_valid"
+          # Helper for webhook testing
+          webhook:
+            event: "invoice.paid"
+            signature_header: "t={{timestamp}},v1={{hmac_sha256(payload, webhook_secret)}}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST SUITE STRUCTURE
+# How tests are organized
+# ═══════════════════════════════════════════════════════════════════════════════
+
+test_structure:
+  
+  organization: "by_feature"
+  
+  # Directory structure
+  directories:
+    root: "tests/"
+    
+    structure:
+      - path: "tests/api/"
+        description: "API integration tests"
+        
+      - path: "tests/api/auth/"
+        description: "Authentication endpoints"
+        files:
+          - "registration_test.rs"
+          - "login_test.rs"
+          - "oauth_test.rs"
+          - "password_reset_test.rs"
+          
+      - path: "tests/api/notifications/"
+        description: "Notification endpoints"
+        files:
+          - "create_test.rs"
+          - "list_test.rs"
+          - "delivery_test.rs"
+          
+      - path: "tests/factories/"
+        description: "Test data factories"
+        
+      - path: "tests/mocks/"
+        description: "External service mocks"
+        
+      - path: "tests/support/"
+        description: "Test helpers and utilities"
+        
+  # Naming conventions
+  naming:
+    test_files: "{feature}_test.rs"
+    test_functions: "test_{path_id}_{description}"
+    
+  # Example test file structure
+  example_structure: |
+    // tests/api/auth/registration_test.rs
+    
+    mod setup;
+    use crate::factories::UserFactory;
+    use crate::mocks::sendgrid;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // HAPPY PATHS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    #[tokio::test]
+    async fn test_path_001_registers_user_successfully() {
+        // Arrange
+        let app = setup::test_app().await;
+        sendgrid::mock_send_success();
+        
+        // Act
+        let response = app
+            .post("/api/v1/auth/register")
+            .json(&json!({
+                "email": "newuser@example.com",
+                "password": "ValidPass123!"
+            }))
+            .await;
+            
+        // Assert
+        assert_eq!(response.status(), 201);
+        
+        // Verify database state
+        let user = app.db.query_one(
+            "SELECT * FROM users WHERE email = $1",
+            &["newuser@example.com"]
+        ).await;
+        assert!(user.is_some());
+        assert_eq!(user.email_verified, false);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // VALIDATION ERRORS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    #[tokio::test]
+    async fn test_path_002_rejects_invalid_email() {
+        // ...
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // EDGE CASES
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    #[tokio::test]
+    async fn test_edge_001_unicode_email() {
+        // ...
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOUNDARY CONDITIONS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    #[tokio::test]
+    async fn test_boundary_email_minimum_length() {
+        // ...
+    }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST GENERATION RULES
+# How to generate tests from software-ideal.yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generation:
+  
+  # For each feature in software-ideal.yaml
+  per_feature:
+    
+    # Generate test for each PATH-*
+    paths:
+      template: |
+        #[tokio::test]
+        async fn test_{{path_id | snake_case}}_{{name | snake_case}}() {
+            // Arrange
+            {{#arrange}}
+            {{/arrange}}
+            
+            // Act
+            let response = app
+                .{{method | lower}}("{{endpoint}}")
+                {{#if body}}.json(&json!({{body | to_json}})){{/if}}
+                .await;
+                
+            // Assert
+            assert_eq!(response.status(), {{expected_status}});
+            {{#assertions}}
+            {{.}}
+            {{/assertions}}
+        }
+        
+    # Generate test for each EDGE-*
+    edge_cases:
+      template: |
+        #[tokio::test]
+        async fn test_{{case_id | snake_case}}_{{name | snake_case}}() {
+            // Edge case: {{description}}
+            // ...
+        }
+        
+    # Generate test for each boundary
+    boundaries:
+      template: |
+        #[tokio::test]
+        async fn test_boundary_{{field}}_{{boundary | snake_case}}() {
+            // Boundary: {{description}}
+            // Value: {{value}}
+            // Expected: {{expected}}
+            // ...
+        }
+        
+  # Require all paths covered
+  coverage_check:
+    enabled: true
+    fail_on_missing: true
+    report_format: "markdown"

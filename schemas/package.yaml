@@ -1,0 +1,458 @@
+# SPARC v6.1 UNIFIED SIMULATION PACKAGE
+# Master index connecting all components
+#
+# Philosophy:
+# - Platform-aware architecture (detect if platform vs single SaaS)
+# - Unified authentication for platforms
+# - White-label ready, change-friendly architecture
+# - Business analysis informs strategy
+# - Software analysis informs features
+# - Exhaustive cyclomatic paths ensure complete specification
+# - DSLs enable autonomous implementation
+# - API integration tests verify everything
+
+$schema: "https://sparc-dsl.dev/schemas/package.yaml.json"
+version: "6.1"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""                    # Project name
+  description: ""
+  version: "0.1.0"
+  
+  generated_at: ""
+  generator: "sparc-meta-prompt-v6.1"
+  
+  idea:
+    name: ""
+    tagline: ""
+    problem_statement: ""
+    target_users: []
+    primary_kpi: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ARCHITECTURE DECISION
+# Platform vs Single SaaS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+architecture:
+  
+  type: ""                    # "platform" | "single_saas"
+  confidence: ""              # "high" | "medium" | "low"
+  rationale: ""
+  
+  # If platform
+  platform_config:
+    bounded_contexts: []
+    shared_services: []
+    unified_auth: true
+    repository_per_context: true
+    
+  # Always
+  white_label:
+    enabled: true
+    standalone_deployable: true
+    customization_layers:
+      - "branding"
+      - "domain"
+      - "features"
+      - "integrations"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PACKAGE CONTENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+contents:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Architecture Layer
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  architecture:
+    description: "Platform/architecture decisions"
+    
+    platform_decision:
+      file: "architecture/platform-decision.yaml"
+      description: "Analysis of whether this is a platform or single SaaS"
+      
+    platform_architecture:
+      file: "architecture/platform-architecture.yaml"
+      schema: "schemas/platform-architecture.yaml"
+      description: "Bounded contexts, unified auth, repository structure"
+      condition: "Only if type == platform"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Business Layer
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  business:
+    description: "Market and business strategy analysis"
+    
+    competitors:
+      directory: "business/competitors/"
+      count: "5-8"
+      files: []
+      schema: "schemas/business-competitor.yaml"
+      
+    ideal:
+      file: "business/ideal/business-ideal.yaml"
+      schema: "schemas/business-ideal.yaml"
+      description: "Optimal business strategy synthesized from competitor analysis"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Software Layer
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  software:
+    description: "Product and technical analysis"
+    
+    competitors:
+      directory: "software/competitors/"
+      count: "5-8"
+      files: []
+      schema: "schemas/software-competitor.yaml"
+      
+    ideal:
+      file: "software/ideal/software-ideal.yaml"
+      schema: "schemas/software-ideal.yaml"
+      description: "Complete software specification with exhaustive cyclomatic paths"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Executable DSLs
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  dsl:
+    description: "Machine-readable specifications for code generation"
+    
+    data:
+      file: "dsl/data.yaml"
+      schema: "schemas/data.yaml"
+      generates:
+        - "SQL migrations"
+        - "ORM models (Prisma/Drizzle)"
+        - "Seed data"
+        - "TypeScript types"
+        
+    ui:
+      file: "dsl/ui.yaml"
+      schema: "schemas/ui.yaml"
+      generates:
+        - "React/Vue components"
+        - "Screens and layouts"
+        - "Storybook stories"
+        - "Design tokens"
+        
+    logic:
+      file: "dsl/logic.yaml"
+      schema: "schemas/logic.yaml"
+      generates:
+        - "Service classes"
+        - "State machines (XState)"
+        - "Validation schemas (Zod)"
+        - "Workflow definitions"
+        
+    api:
+      file: "dsl/api.yaml"
+      schema: "schemas/api.yaml"
+      generates:
+        - "API routers (Hono/Express/Axum)"
+        - "OpenAPI specification"
+        - "Client SDKs"
+        - "API documentation"
+        
+    auth:
+      file: "dsl/auth.yaml"
+      schema: "schemas/auth.yaml"
+      generates:
+        - "Auth middleware"
+        - "RBAC policies"
+        - "OAuth configuration"
+        - "Session management"
+        
+    deploy:
+      file: "dsl/deploy.yaml"
+      schema: "schemas/deploy.yaml"
+      generates:
+        - "Terraform configs"
+        - "Kubernetes manifests"
+        - "GitHub Actions"
+        - "Docker Compose"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Testing Layer
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  tests:
+    description: "API integration test specifications"
+    
+    spec:
+      file: "tests/tests.yaml"
+      schema: "schemas/tests.yaml"
+      
+    factories:
+      file: "tests/factories.yaml"
+      description: "Test data factories"
+      
+    mocks:
+      directory: "tests/mocks/"
+      description: "External service WebMock fixtures"
+      files:
+        - "oauth.yaml"
+        - "email.yaml"
+        - "sms.yaml"
+        - "payment.yaml"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Simulation Layer
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  simulation:
+    description: "Interactive exploration and validation"
+    
+    modes:
+      file: "simulation/modes.yaml"
+      description: "Available simulation modes"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTING RULES - ENFORCED
+# ═══════════════════════════════════════════════════════════════════════════════
+
+testing_rules:
+  
+  level:
+    type: "api_integration_only"
+    description: "All tests are HTTP-level integration tests. No unit tests."
+    
+  coverage:
+    type: "cyclomatic_path_complete"
+    description: "Every PATH-*, EDGE-*, and boundary from software-ideal must have a test."
+    
+  mocking:
+    allowed:
+      - "OAuth providers (Google, Apple, Facebook, GitHub, Microsoft)"
+      - "Email providers (SendGrid, Postmark, Mailgun, SES)"
+      - "SMS providers (Twilio, MessageBird, Vonage)"
+      - "Payment providers (Stripe, PayPal)"
+      - "Push notification providers (Firebase, APNS)"
+      - "External storage (S3, GCS) when accessed as external service"
+      - "Any third-party API"
+      
+    forbidden:
+      - "Database connections - use real test database"
+      - "Redis/cache - use real test cache"
+      - "File system - use real test filesystem"
+      - "Message queues - use real test queue"
+      - "Internal service calls - call actual implementation"
+      - "ORM/query builders - never mock"
+      - "Application logic - never mock"
+      
+  data:
+    strategy: "factories"
+    fallback: "fixtures"
+    description: "Use factories for dynamic test data. Fixtures only when factories impossible."
+    
+  database:
+    type: "real"
+    isolation: "transaction_rollback"
+    description: "All tests hit real database, wrapped in transactions that rollback."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CROSS-REFERENCES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cross_references:
+  
+  architecture_refs:
+    - from: "architecture/platform-architecture.yaml#/bounded_contexts"
+      to: "Repository structure"
+      relationship: "defines"
+      
+    - from: "architecture/platform-architecture.yaml#/unified_auth"
+      to: "dsl/auth.yaml"
+      relationship: "configures"
+      
+  business_to_software:
+    - from: "business/ideal/business-ideal.yaml#/optimal_positioning"
+      to: "software/ideal/software-ideal.yaml#/product_vision"
+      relationship: "informs"
+      
+  software_to_dsl:
+    - from: "software/ideal/software-ideal.yaml#/feature_specifications"
+      to: "dsl/logic.yaml#/workflows"
+      relationship: "implements"
+      
+  software_to_tests:
+    - from: "software/ideal/software-ideal.yaml#/paths"
+      to: "tests/tests.yaml#/test_suites"
+      relationship: "generates"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTERPRETERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+interpreters:
+  
+  data:
+    - target: "drizzle"
+      output: "src/db/schema.ts"
+    - target: "migrations"
+      output: "migrations/*.sql"
+      
+  ui:
+    - target: "react"
+      output: "src/components/**/*.tsx"
+      
+  logic:
+    - target: "services"
+      output: "src/services/**/*.ts"
+    - target: "xstate"
+      output: "src/machines/**/*.ts"
+      
+  api:
+    - target: "hono"
+      output: "src/routes/**/*.ts"
+    - target: "axum"
+      output: "src/routes/**/*.rs"
+    - target: "openapi"
+      output: "openapi.yaml"
+      
+  auth:
+    - target: "middleware"
+      output: "src/middleware/auth.ts"
+      
+  deploy:
+    - target: "terraform"
+      output: "infra/terraform/**/*.tf"
+    - target: "kubernetes"
+      output: "infra/k8s/**/*.yaml"
+    - target: "docker-compose"
+      output: "docker-compose.yaml"
+      
+  tests:
+    - target: "rust"
+      output: "tests/**/*_test.rs"
+    - target: "typescript"
+      output: "tests/**/*.test.ts"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION MODES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  business:
+    - name: "competitive_landscape"
+      command: "sparc sim business:landscape"
+    - name: "pricing_comparison"
+      command: "sparc sim business:pricing"
+    - name: "gtm_timeline"
+      command: "sparc sim business:gtm"
+      
+  software:
+    - name: "feature_matrix"
+      command: "sparc sim software:features"
+    - name: "path_explorer"
+      command: "sparc sim software:paths"
+    - name: "state_machines"
+      command: "sparc sim software:states"
+      
+  technical:
+    - name: "mock_server"
+      command: "sparc sim api:mock"
+    - name: "ui_prototype"
+      command: "sparc sim ui:prototype"
+    - name: "database_diagram"
+      command: "sparc sim data:diagram"
+    - name: "architecture_diagram"
+      command: "sparc sim deploy:architecture"
+    - name: "cost_estimation"
+      command: "sparc sim deploy:cost"
+      
+  platform:
+    - name: "service_map"
+      command: "sparc sim platform:services"
+    - name: "auth_flows"
+      command: "sparc sim platform:auth"
+      
+  testing:
+    - name: "coverage_report"
+      command: "sparc sim tests:coverage"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DIRECTORY STRUCTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+structure:
+  
+  single_saas:
+    root: "./"
+    directories:
+      - "spec/"
+      - "spec/architecture/"
+      - "spec/business/competitors/"
+      - "spec/business/ideal/"
+      - "spec/software/competitors/"
+      - "spec/software/ideal/"
+      - "spec/dsl/"
+      - "spec/tests/"
+      - "spec/simulation/"
+      - "src/"
+      - "tests/"
+      - "infra/"
+      
+  platform:
+    organization: "{{platform}}"
+    repositories:
+      - name: "{{platform}}-platform"
+        type: "meta"
+      - name: "{{platform}}-auth"
+        type: "shared_service"
+      - name: "{{platform}}-billing"
+        type: "shared_service"
+      - name: "{{platform}}-notifications"
+        type: "shared_service"
+      - name: "{{platform}}-common"
+        type: "library"
+      - name: "{{platform}}-sdk"
+        type: "library"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validation:
+  
+  architecture:
+    - "Platform decision made with rationale"
+    - "If platform: bounded contexts defined"
+    - "If platform: unified auth architecture specified"
+    - "White-label configuration included"
+    
+  business:
+    - "At least 5 competitors analyzed"
+    - "Business ideal synthesizes all competitors"
+    - "Pricing strategy defined"
+    - "Go-to-market strategy defined"
+    
+  software:
+    - "At least 5 competitors analyzed"
+    - "Every feature has complete PATH-* coverage"
+    - "Every feature has EDGE-* cases"
+    - "Every feature has boundary conditions"
+    - "Every stateful entity has state machine"
+    
+  dsl:
+    - "Every entity has primary key"
+    - "Every screen has route"
+    - "Every workflow has steps"
+    - "Every endpoint has handler"
+    - "Every role has permissions"
+    
+  tests:
+    - "Every PATH-* has corresponding test"
+    - "Every EDGE-* has corresponding test"
+    - "No mocks on database/filesystem"
+    - "External services have mock fixtures"

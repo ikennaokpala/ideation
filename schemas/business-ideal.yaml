@@ -1,0 +1,519 @@
+# BUSINESS IDEAL SYNTHESIS SCHEMA
+# Optimal business strategy synthesized from competitor analysis
+#
+# Purpose: Define the ideal business model, positioning, pricing,
+# and go-to-market strategy based on competitive intelligence.
+
+$schema: "https://sparc-dsl.dev/schemas/business-ideal.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  project_name: ""
+  synthesis_date: ""
+  competitors_analyzed: []
+  confidence_level: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPETITOR SYNTHESIS
+# Patterns and insights from analysis
+# ═══════════════════════════════════════════════════════════════════════════════
+
+competitor_synthesis:
+  
+  patterns_observed:
+    pricing:
+      - pattern: ""
+        frequency: ""         # How many competitors
+        effectiveness: ""
+        
+    go_to_market:
+      - pattern: ""
+        frequency: ""
+        effectiveness: ""
+        
+    positioning:
+      - pattern: ""
+        frequency: ""
+        differentiation_potential: ""
+        
+    technology:
+      - pattern: ""
+        frequency: ""
+        innovation_opportunity: ""
+        
+  gaps_identified:
+    - gap: ""
+      description: ""
+      opportunity_size: ""    # small | medium | large | massive
+      difficulty: ""          # easy | moderate | hard | very-hard
+      time_to_exploit: ""
+      competitors_ignoring: []
+      
+  lessons_learned:
+    - from_competitor: ""
+      lesson: ""
+      application: ""
+      priority: ""            # critical | high | medium | low
+      
+  anti_patterns:
+    - pattern: ""
+      why_avoid: ""
+      who_does_this: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPTIMAL POSITIONING
+# Where to play in the market
+# ═══════════════════════════════════════════════════════════════════════════════
+
+optimal_positioning:
+  
+  positioning_statement: |
+    For [target customer]
+    Who [have this need/problem]
+    [Product name] is a [category]
+    That [key benefit/differentiation]
+    Unlike [primary competitor/alternative]
+    We [unique value proposition]
+    
+  target_market:
+    primary_segment:
+      name: ""
+      description: ""
+      size: ""
+      characteristics:
+        company_size: ""
+        industry: []
+        geography: []
+        tech_maturity: ""
+      needs: []
+      pain_points: []
+      willingness_to_pay: ""
+      
+    secondary_segments:
+      - name: ""
+        description: ""
+        priority: ""
+        expansion_timeline: ""
+        
+    explicitly_not_targeting:
+      - segment: ""
+        reason: ""
+        
+  differentiation:
+    primary_differentiator:
+      factor: ""
+      description: ""
+      proof_points: []
+      defensibility: ""
+      
+    supporting_differentiators:
+      - factor: ""
+        importance: ""
+        
+  category:
+    existing_category: ""
+    category_strategy: ""     # compete | create | reframe
+    new_category_name: ""     # If creating
+    category_narrative: ""
+    
+  competitive_frame:
+    primary_competitor: ""
+    frame_as: ""              # How to position against them
+    
+  messaging:
+    tagline: ""
+    elevator_pitch: ""
+    key_messages:
+      - message: ""
+        audience: ""
+        supporting_proof: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPTIMAL BUSINESS MODEL
+# How to make money
+# ═══════════════════════════════════════════════════════════════════════════════
+
+optimal_business_model:
+  
+  revenue_model:
+    primary: ""               # subscription | usage | transaction | hybrid
+    rationale: ""
+    
+  pricing_strategy:
+    philosophy: ""            # value | competitive | penetration | premium
+    
+    recommended_tiers:
+      - name: "Free"
+        price: "$0"
+        target: ""
+        purpose: ""           # acquisition | trial | community
+        features:
+          included: []
+          excluded: []
+        limits:
+          - resource: ""
+            limit: ""
+        conversion_target: ""
+        
+      - name: "Pro"
+        price: ""
+        billing: ""           # monthly | annual
+        target: ""
+        positioning: ""
+        features:
+          included: []
+        limits: []
+        
+      - name: "Enterprise"
+        price: "Custom"
+        target: ""
+        features:
+          included: []
+        requirements: []
+        
+    pricing_psychology:
+      anchor_tier: ""
+      decoy_tier: ""
+      value_metric: ""        # What customers pay for (seats, usage, etc.)
+      
+    discounts:
+      annual_discount: ""
+      startup_program:
+        discount: ""
+        eligibility: ""
+      nonprofit_discount: ""
+      
+  target_unit_economics:
+    target_cac: ""
+    target_ltv: ""
+    target_ltv_cac_ratio: ""
+    target_payback_period: ""
+    target_gross_margin: ""
+    target_nrr: ""            # Net Revenue Retention
+    
+  monetization_timeline:
+    phase_1:
+      focus: ""
+      monetization: ""
+    phase_2:
+      focus: ""
+      monetization: ""
+    phase_3:
+      focus: ""
+      monetization: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPTIMAL GO-TO-MARKET
+# How to acquire and retain customers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+optimal_go_to_market:
+  
+  primary_motion: ""          # product-led | sales-led | community-led | hybrid
+  
+  phase_1_launch:
+    duration: ""
+    focus: ""
+    target_customers: ""
+    channels:
+      - channel: ""
+        investment: ""
+        expected_cac: ""
+    key_activities: []
+    success_metrics:
+      - metric: ""
+        target: ""
+    budget_allocation: ""
+    
+  phase_2_growth:
+    trigger: ""               # What triggers moving to phase 2
+    focus: ""
+    expansion_strategy: ""
+    new_channels: []
+    team_additions: []
+    
+  phase_3_scale:
+    trigger: ""
+    focus: ""
+    moat_building: []
+    international_expansion: ""
+    
+  acquisition_strategy:
+    inbound:
+      content_strategy: ""
+      seo_focus: []
+      community_building: ""
+      
+    outbound:
+      target_accounts: ""
+      outreach_strategy: ""
+      
+    product_led:
+      viral_loops: []
+      freemium_conversion: ""
+      
+    partnerships:
+      integration_partners: []
+      channel_partners: []
+      
+  retention_strategy:
+    onboarding:
+      time_to_value_target: ""
+      key_milestones: []
+      
+    engagement:
+      health_metrics: []
+      intervention_triggers: []
+      
+    expansion:
+      upsell_triggers: []
+      cross_sell_opportunities: []
+      
+  sales_strategy:
+    model: ""
+    team_structure: ""
+    territories: ""
+    quota_model: ""
+    compensation: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MOAT STRATEGY
+# Building defensibility
+# ═══════════════════════════════════════════════════════════════════════════════
+
+moat_strategy:
+  
+  primary_moat:
+    type: ""                  # network | data | switching | brand | scale | technology
+    description: ""
+    time_to_build: ""
+    defensibility: ""
+    
+  moat_building_sequence:
+    - phase: 1
+      moat_type: ""
+      action: ""
+      timeline: ""
+      success_indicator: ""
+      
+    - phase: 2
+      moat_type: ""
+      action: ""
+      timeline: ""
+      
+    - phase: 3
+      moat_type: ""
+      action: ""
+      timeline: ""
+      
+  reinforcing_loops:
+    - loop: ""
+      description: ""
+      strength: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RISK ANALYSIS
+# What could go wrong
+# ═══════════════════════════════════════════════════════════════════════════════
+
+risk_analysis:
+  
+  market_risks:
+    - risk: ""
+      probability: ""         # low | medium | high
+      impact: ""              # minor | moderate | severe
+      mitigation: ""
+      trigger_indicators: []
+      
+  competitive_risks:
+    - risk: ""
+      probability: ""
+      impact: ""
+      mitigation: ""
+      
+  execution_risks:
+    - risk: ""
+      probability: ""
+      impact: ""
+      mitigation: ""
+      
+  financial_risks:
+    - risk: ""
+      probability: ""
+      impact: ""
+      mitigation: ""
+      
+  regulatory_risks:
+    - risk: ""
+      probability: ""
+      impact: ""
+      mitigation: ""
+      
+  existential_risks:
+    - risk: ""
+      probability: ""
+      mitigation: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SUCCESS METRICS
+# How to measure success
+# ═══════════════════════════════════════════════════════════════════════════════
+
+success_metrics:
+  
+  north_star:
+    metric: ""
+    definition: ""
+    rationale: ""
+    
+  primary_metrics:
+    - metric: ""
+      definition: ""
+      target_phase_1: ""
+      target_phase_2: ""
+      target_phase_3: ""
+      measurement_frequency: ""
+      
+  health_metrics:
+    - metric: ""
+      healthy_range: ""
+      warning_threshold: ""
+      critical_threshold: ""
+      
+  anti_metrics:
+    - metric: ""
+      why_not_optimize: ""
+      acceptable_range: ""
+      
+  leading_indicators:
+    - indicator: ""
+      leads_to: ""
+      lag_time: ""
+      
+  milestone_targets:
+    - milestone: ""
+      target_date: ""
+      success_criteria: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COGNITIVE VALIDATION
+# Stress-test the strategy
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cognitive_validation:
+  
+  adversarial:
+    how_could_this_fail:
+      - failure_mode: ""
+        likelihood: ""
+        prevention: ""
+        
+    competitive_responses:
+      - competitor: ""
+        likely_response: ""
+        counter_strategy: ""
+        
+  contrarian:
+    assumptions_questioned:
+      - assumption: ""
+        alternative_view: ""
+        if_wrong_impact: ""
+        
+    unconventional_elements:
+      - element: ""
+        why_different: ""
+        evidence_supporting: ""
+        
+  temporal:
+    year_1:
+      focus: ""
+      expected_position: ""
+      key_milestones: []
+      
+    year_3:
+      focus: ""
+      expected_position: ""
+      scaling_challenges: []
+      
+    year_5:
+      focus: ""
+      expected_position: ""
+      strategic_options: []
+      
+    year_10:
+      vision: ""
+      potential_outcomes:
+        - outcome: ""
+          probability: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESOURCE REQUIREMENTS
+# What's needed to execute
+# ═══════════════════════════════════════════════════════════════════════════════
+
+resources:
+  
+  funding:
+    phase_1:
+      amount: ""
+      use_of_funds: []
+      runway: ""
+    phase_2:
+      amount: ""
+      use_of_funds: []
+    phase_3:
+      amount: ""
+      use_of_funds: []
+      
+  team:
+    phase_1:
+      size: ""
+      key_hires: []
+    phase_2:
+      size: ""
+      key_hires: []
+    phase_3:
+      size: ""
+      departments: []
+      
+  technology:
+    phase_1:
+      infrastructure_cost: ""
+      key_investments: []
+    scaling_considerations: []
+    
+  partnerships:
+    critical_partnerships: []
+    nice_to_have: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXECUTION ROADMAP
+# Sequenced actions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+roadmap:
+  
+  immediate_actions:
+    - action: ""
+      owner: ""
+      deadline: ""
+      success_criteria: ""
+      
+  phase_1_priorities:
+    - priority: ""
+      rationale: ""
+      dependencies: []
+      
+  phase_2_priorities:
+    - priority: ""
+      trigger: ""
+      
+  decision_points:
+    - decision: ""
+      timing: ""
+      criteria: []
+      options: []

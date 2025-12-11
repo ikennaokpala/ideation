@@ -1,0 +1,897 @@
+# SOFTWARE IDEAL SPECIFICATION SCHEMA
+# Complete software specification with exhaustive cyclomatic path coverage
+#
+# Purpose: Define every feature, every path through that feature,
+# every edge case, and every boundary condition for complete coverage.
+#
+# This specification is detailed enough for:
+# - Direct implementation without ambiguity
+# - Complete test generation
+# - API contract definition
+# - State machine implementation
+
+$schema: "https://sparc-dsl.dev/schemas/software-ideal.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  project_name: ""
+  synthesis_date: ""
+  competitors_analyzed: []
+  version: "0.1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRODUCT VISION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+product_vision:
+  
+  mission: ""
+  
+  core_job_to_be_done: ""
+  
+  ideal_user_experience:
+    before: ""                # User's state before using product
+    after: ""                 # User's state after using product
+    transformation: ""        # The change we enable
+    
+  design_principles:
+    - principle: ""
+      application: ""
+      
+  non_goals:
+    - non_goal: ""
+      reason: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TECHNICAL ARCHITECTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+technical_architecture:
+  
+  philosophy:
+    api_first: true
+    offline_first: false
+    real_time: true
+    multi_tenant: true
+    
+  stack:
+    frontend:
+      framework: ""
+      language: ""
+      
+    backend:
+      framework: ""
+      language: ""
+      
+    database:
+      primary: ""
+      cache: ""
+      search: ""
+      
+    infrastructure:
+      cloud: ""
+      compute: ""
+      cdn: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FEATURE SPECIFICATIONS
+# Complete feature definitions with exhaustive cyclomatic paths
+# ═══════════════════════════════════════════════════════════════════════════════
+
+feature_specifications:
+  
+  domains:
+    
+    # ─────────────────────────────────────────────────────────────────────────────
+    # DOMAIN: Authentication
+    # ─────────────────────────────────────────────────────────────────────────────
+    
+    - name: "authentication"
+      description: "User authentication and account management"
+      
+      features:
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # FEATURE: User Registration
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        - name: "user_registration"
+          description: "Allow new users to create accounts"
+          priority: "P0"
+          phase: 1
+          
+          # ─────────────────────────────────────────────────────────────────────
+          # User Stories
+          # ─────────────────────────────────────────────────────────────────────
+          
+          user_stories:
+            - id: "US-001"
+              as: "anonymous visitor"
+              i_want: "to create an account with my email"
+              so_that: "I can access the application"
+              acceptance_criteria:
+                - "Email is validated for format"
+                - "Password meets strength requirements"
+                - "Account is created in database"
+                - "Verification email is sent"
+                - "User is logged in after registration"
+                
+          # ─────────────────────────────────────────────────────────────────────
+          # Scenarios
+          # ─────────────────────────────────────────────────────────────────────
+          
+          scenarios:
+            - id: "SCENARIO-001"
+              name: "Email registration"
+              actor: "anonymous_user"
+              
+              preconditions:
+                - "User is not logged in"
+                - "User does not have an existing account"
+                
+              postconditions_success:
+                - "User record exists in database"
+                - "User email_verified = false"
+                - "Verification token created"
+                - "Verification email sent"
+                - "User is logged in"
+                
+              postconditions_failure:
+                - "No user record created"
+                - "No email sent"
+                - "Error message displayed"
+                
+              happy_path:
+                - step: 1
+                  action: "User navigates to /register"
+                  system_response: "Display registration form"
+                  
+                - step: 2
+                  action: "User enters valid email and password"
+                  system_response: "Validate input client-side, enable submit"
+                  
+                - step: 3
+                  action: "User clicks submit"
+                  system_response: "POST to /api/v1/auth/register"
+                  
+                - step: 4
+                  action: "Server validates and creates account"
+                  system_response: "Return 201 with user data"
+                  
+                - step: 5
+                  action: "System sends verification email"
+                  system_response: "Queue email via provider"
+                  
+                - step: 6
+                  action: "Client redirects to dashboard"
+                  system_response: "Display welcome message"
+                  
+          # ─────────────────────────────────────────────────────────────────────
+          # Decision Points
+          # Every branch in the logic
+          # ─────────────────────────────────────────────────────────────────────
+          
+          decision_points:
+            
+            - id: "DP-001"
+              name: "Email format validation"
+              condition: "Is email format valid?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "email matches RFC 5322 pattern"
+                  result: "continue to next validation"
+                - id: "B"
+                  condition: "email does not match pattern"
+                  result: "return error INVALID_EMAIL_FORMAT"
+                  
+            - id: "DP-002"
+              name: "Password minimum length"
+              condition: "Is password >= 8 characters?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "length >= 8"
+                  result: "continue to next validation"
+                - id: "B"
+                  condition: "length < 8"
+                  result: "return error PASSWORD_TOO_SHORT"
+                  
+            - id: "DP-003"
+              name: "Password has uppercase"
+              condition: "Does password contain uppercase?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "matches [A-Z]"
+                  result: "continue"
+                - id: "B"
+                  condition: "no match"
+                  result: "return error PASSWORD_NEEDS_UPPERCASE"
+                  
+            - id: "DP-004"
+              name: "Password has lowercase"
+              condition: "Does password contain lowercase?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "matches [a-z]"
+                  result: "continue"
+                - id: "B"
+                  condition: "no match"
+                  result: "return error PASSWORD_NEEDS_LOWERCASE"
+                  
+            - id: "DP-005"
+              name: "Password has number"
+              condition: "Does password contain number?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "matches [0-9]"
+                  result: "continue"
+                - id: "B"
+                  condition: "no match"
+                  result: "return error PASSWORD_NEEDS_NUMBER"
+                  
+            - id: "DP-006"
+              name: "Password has special character"
+              condition: "Does password contain special char?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "matches special char pattern"
+                  result: "password validation complete"
+                - id: "B"
+                  condition: "no match"
+                  result: "return error PASSWORD_NEEDS_SPECIAL"
+                  
+            - id: "DP-007"
+              name: "Email uniqueness check"
+              condition: "Does email already exist in database?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "no existing user with email"
+                  result: "continue to create account"
+                - id: "B"
+                  condition: "user exists and is verified"
+                  result: "return error EMAIL_ALREADY_EXISTS"
+                - id: "C"
+                  condition: "user exists but unverified"
+                  result: "return option to resend verification"
+                  
+            - id: "DP-008"
+              name: "Database insert"
+              condition: "Did user insert succeed?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "insert successful"
+                  result: "continue to send email"
+                - id: "B"
+                  condition: "unique constraint violation (race condition)"
+                  result: "return error EMAIL_ALREADY_EXISTS"
+                - id: "C"
+                  condition: "database error"
+                  result: "return error INTERNAL_ERROR"
+                  
+            - id: "DP-009"
+              name: "Email delivery"
+              condition: "Did verification email send?"
+              location: "server"
+              branches:
+                - id: "A"
+                  condition: "provider returns success"
+                  result: "continue"
+                - id: "B"
+                  condition: "provider returns temporary error"
+                  result: "retry with exponential backoff"
+                - id: "C"
+                  condition: "all retries exhausted"
+                  result: "log for manual retry, continue anyway"
+                  
+          # ─────────────────────────────────────────────────────────────────────
+          # All Paths
+          # Every combination through decision points
+          # ─────────────────────────────────────────────────────────────────────
+          
+          paths:
+            
+            - path_id: "PATH-001"
+              name: "Happy path - all validations pass"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:A"
+                - "DP-008:A"
+                - "DP-009:A"
+              probability: "70%"
+              priority: "P0"
+              expected_result: "User created, email sent, logged in"
+              http_status: 201
+              response_body:
+                id: "uuid"
+                email: "string"
+                created_at: "datetime"
+                
+            - path_id: "PATH-002"
+              name: "Invalid email format"
+              branch_sequence:
+                - "DP-001:B"
+              probability: "5%"
+              priority: "P0"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "INVALID_EMAIL_FORMAT"
+              
+            - path_id: "PATH-003"
+              name: "Password too short"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:B"
+              probability: "8%"
+              priority: "P0"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "PASSWORD_TOO_SHORT"
+              
+            - path_id: "PATH-004"
+              name: "Password missing uppercase"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:B"
+              probability: "3%"
+              priority: "P1"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "PASSWORD_NEEDS_UPPERCASE"
+              
+            - path_id: "PATH-005"
+              name: "Password missing lowercase"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:B"
+              probability: "2%"
+              priority: "P1"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "PASSWORD_NEEDS_LOWERCASE"
+              
+            - path_id: "PATH-006"
+              name: "Password missing number"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:B"
+              probability: "3%"
+              priority: "P1"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "PASSWORD_NEEDS_NUMBER"
+              
+            - path_id: "PATH-007"
+              name: "Password missing special char"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:B"
+              probability: "4%"
+              priority: "P1"
+              expected_result: "Validation error"
+              http_status: 400
+              error_code: "PASSWORD_NEEDS_SPECIAL"
+              
+            - path_id: "PATH-008"
+              name: "Email already exists (verified user)"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:B"
+              probability: "3%"
+              priority: "P0"
+              expected_result: "Conflict error"
+              http_status: 409
+              error_code: "EMAIL_ALREADY_EXISTS"
+              
+            - path_id: "PATH-009"
+              name: "Email exists but unverified - offer resend"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:C"
+              probability: "1%"
+              priority: "P1"
+              expected_result: "Offer to resend verification"
+              http_status: 200
+              
+            - path_id: "PATH-010"
+              name: "Race condition - concurrent registration"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:A"
+                - "DP-008:B"
+              probability: "0.1%"
+              priority: "P2"
+              expected_result: "Conflict error"
+              http_status: 409
+              error_code: "EMAIL_ALREADY_EXISTS"
+              
+            - path_id: "PATH-011"
+              name: "Database error"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:A"
+                - "DP-008:C"
+              probability: "0.01%"
+              priority: "P2"
+              expected_result: "Server error"
+              http_status: 500
+              error_code: "INTERNAL_ERROR"
+              
+            - path_id: "PATH-012"
+              name: "Email send fails, retry succeeds"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:A"
+                - "DP-008:A"
+                - "DP-009:B"
+                - "DP-009:A"
+              probability: "0.5%"
+              priority: "P2"
+              expected_result: "User created after retry"
+              http_status: 201
+              
+            - path_id: "PATH-013"
+              name: "Email send fails completely"
+              branch_sequence:
+                - "DP-001:A"
+                - "DP-002:A"
+                - "DP-003:A"
+                - "DP-004:A"
+                - "DP-005:A"
+                - "DP-006:A"
+                - "DP-007:A"
+                - "DP-008:A"
+                - "DP-009:C"
+              probability: "0.05%"
+              priority: "P2"
+              expected_result: "User created, email logged for manual retry"
+              http_status: 201
+              
+          # ─────────────────────────────────────────────────────────────────────
+          # Edge Cases
+          # Unusual but valid inputs
+          # ─────────────────────────────────────────────────────────────────────
+          
+          edge_cases:
+            
+            - case_id: "EDGE-001"
+              name: "Unicode in email local part"
+              description: "RFC 6531 allows internationalized email addresses"
+              input:
+                email: "用户@example.com"
+              expected_behavior: "Accept if RFC 6531 compliant"
+              test_required: true
+              
+            - case_id: "EDGE-002"
+              name: "Plus addressing"
+              description: "Gmail-style plus addressing should be preserved"
+              input:
+                email: "user+tag@example.com"
+              expected_behavior: "Accept, store exactly as provided"
+              test_required: true
+              
+            - case_id: "EDGE-003"
+              name: "Maximum length email (254 chars)"
+              description: "RFC 5321 allows up to 254 characters"
+              input:
+                email: "a]"
+              expected_behavior: "Accept"
+              test_required: true
+              
+            - case_id: "EDGE-004"
+              name: "Email case sensitivity"
+              description: "Email should be case-insensitive for matching"
+              input:
+                email: "User@Example.COM"
+              expected_behavior: "Normalize to lowercase for storage and comparison"
+              test_required: true
+              
+            - case_id: "EDGE-005"
+              name: "SQL injection attempt"
+              description: "Malicious input attempting SQL injection"
+              input:
+                email: "'; DROP TABLE users;--@evil.com"
+              expected_behavior: "Reject as invalid email or sanitize completely"
+              test_required: true
+              
+            - case_id: "EDGE-006"
+              name: "XSS attempt in name field"
+              description: "Script tags in optional name field"
+              input:
+                name: "<script>alert('xss')</script>"
+              expected_behavior: "Sanitize, store escaped"
+              test_required: true
+              
+            - case_id: "EDGE-007"
+              name: "Concurrent registration same email"
+              description: "Two requests arrive simultaneously for same email"
+              input:
+                concurrent_requests: 2
+                email: "race@example.com"
+              expected_behavior: "One succeeds (201), one fails (409)"
+              test_required: true
+              
+            - case_id: "EDGE-008"
+              name: "Rapid repeated submissions (rate limiting)"
+              description: "Many requests from same IP in short time"
+              input:
+                requests_per_second: 100
+              expected_behavior: "Accept first N, then 429 Too Many Requests"
+              test_required: true
+              
+            - case_id: "EDGE-009"
+              name: "Empty string fields"
+              description: "Empty strings vs null vs missing"
+              input:
+                email: ""
+                password: ""
+              expected_behavior: "Treat empty string same as missing, return 400"
+              test_required: true
+              
+            - case_id: "EDGE-010"
+              name: "Very long password"
+              description: "Password at or near maximum length"
+              input:
+                password: "[128 character password]"
+              expected_behavior: "Accept if meets all requirements"
+              test_required: true
+              
+          # ─────────────────────────────────────────────────────────────────────
+          # Boundary Conditions
+          # Testing limits and extremes
+          # ─────────────────────────────────────────────────────────────────────
+          
+          boundary_conditions:
+            
+            email:
+              - boundary: "minimum_valid"
+                value: "a@b.co"
+                length: 6
+                expected: "accept"
+                
+              - boundary: "maximum_valid"
+                value: "[254 character email]"
+                length: 254
+                expected: "accept"
+                
+              - boundary: "over_maximum"
+                value: "[255 character email]"
+                length: 255
+                expected: "reject"
+                
+              - boundary: "empty"
+                value: ""
+                expected: "reject"
+                
+              - boundary: "null"
+                value: null
+                expected: "reject"
+                
+            password:
+              - boundary: "minimum_valid"
+                value: "Aa1!xxxx"
+                length: 8
+                expected: "accept"
+                
+              - boundary: "below_minimum"
+                value: "Aa1!xxx"
+                length: 7
+                expected: "reject"
+                
+              - boundary: "maximum_valid"
+                value: "[128 character valid password]"
+                length: 128
+                expected: "accept"
+                
+              - boundary: "over_maximum"
+                value: "[129 character password]"
+                length: 129
+                expected: "reject"
+                
+              - boundary: "empty"
+                value: ""
+                expected: "reject"
+                
+          # ─────────────────────────────────────────────────────────────────────
+          # State Machine
+          # User account states and transitions
+          # ─────────────────────────────────────────────────────────────────────
+          
+          state_machine:
+            entity: "user"
+            
+            states:
+              - state: "non_existent"
+                description: "No account exists"
+                allowed_actions:
+                  - "register"
+                  
+              - state: "unverified"
+                description: "Account created, email not verified"
+                allowed_actions:
+                  - "verify_email"
+                  - "resend_verification"
+                  - "login_limited"
+                  - "delete_self"
+                  
+              - state: "verified"
+                description: "Email verified, full access"
+                allowed_actions:
+                  - "login"
+                  - "logout"
+                  - "all_authenticated_actions"
+                  - "delete_self"
+                  
+              - state: "suspended"
+                description: "Account suspended by admin"
+                allowed_actions:
+                  - "appeal"
+                  - "view_suspension_reason"
+                  
+              - state: "deleted"
+                description: "Account deleted (soft delete)"
+                type: "final"
+                allowed_actions: []
+                
+            transitions:
+              - from: "non_existent"
+                to: "unverified"
+                trigger: "register"
+                guard: "valid_email AND valid_password AND email_unique"
+                action: "create_user_record, send_verification_email"
+                
+              - from: "unverified"
+                to: "verified"
+                trigger: "verify_email"
+                guard: "valid_token AND token_not_expired"
+                action: "set_email_verified, delete_token"
+                
+              - from: "unverified"
+                to: "unverified"
+                trigger: "resend_verification"
+                guard: "not_rate_limited"
+                action: "create_new_token, send_verification_email"
+                
+              - from: "unverified"
+                to: "deleted"
+                trigger: "verification_expired"
+                guard: "created_at > 7 days ago"
+                action: "soft_delete_record"
+                
+              - from: "verified"
+                to: "suspended"
+                trigger: "admin_suspend"
+                guard: "actor.is_admin"
+                action: "set_suspended, revoke_sessions, notify_user"
+                
+              - from: "suspended"
+                to: "verified"
+                trigger: "admin_reinstate"
+                guard: "actor.is_admin"
+                action: "clear_suspended, notify_user"
+                
+              - from: ["unverified", "verified", "suspended"]
+                to: "deleted"
+                trigger: "delete_request"
+                guard: "confirmed_by_user"
+                action: "gdpr_compliant_deletion"
+                
+          # ─────────────────────────────────────────────────────────────────────
+          # API Specification
+          # ─────────────────────────────────────────────────────────────────────
+          
+          api:
+            endpoint: "/api/v1/auth/register"
+            method: "POST"
+            
+            request:
+              content_type: "application/json"
+              
+              headers:
+                required:
+                  - name: "Content-Type"
+                    value: "application/json"
+                optional:
+                  - name: "X-Request-ID"
+                    description: "Idempotency key"
+                    
+              body:
+                type: "object"
+                required: ["email", "password"]
+                properties:
+                  email:
+                    type: "string"
+                    format: "email"
+                    max_length: 254
+                    example: "user@example.com"
+                  password:
+                    type: "string"
+                    min_length: 8
+                    max_length: 128
+                    example: "SecurePass123!"
+                  name:
+                    type: "string"
+                    max_length: 100
+                    required: false
+                    example: "Jane Smith"
+                    
+            responses:
+              
+              - status: 201
+                description: "User created successfully"
+                body:
+                  type: "object"
+                  properties:
+                    id:
+                      type: "string"
+                      format: "uuid"
+                    email:
+                      type: "string"
+                    created_at:
+                      type: "string"
+                      format: "date-time"
+                      
+              - status: 400
+                description: "Validation error"
+                body:
+                  type: "object"
+                  properties:
+                    error:
+                      type: "object"
+                      properties:
+                        code:
+                          type: "string"
+                          enum:
+                            - "INVALID_EMAIL_FORMAT"
+                            - "PASSWORD_TOO_SHORT"
+                            - "PASSWORD_NEEDS_UPPERCASE"
+                            - "PASSWORD_NEEDS_LOWERCASE"
+                            - "PASSWORD_NEEDS_NUMBER"
+                            - "PASSWORD_NEEDS_SPECIAL"
+                        message:
+                          type: "string"
+                        details:
+                          type: "array"
+                          
+              - status: 409
+                description: "Email already exists"
+                body:
+                  type: "object"
+                  properties:
+                    error:
+                      type: "object"
+                      properties:
+                        code:
+                          type: "string"
+                          const: "EMAIL_ALREADY_EXISTS"
+                        message:
+                          type: "string"
+                          
+              - status: 429
+                description: "Rate limit exceeded"
+                headers:
+                  Retry-After:
+                    type: "integer"
+                    description: "Seconds until rate limit resets"
+                body:
+                  type: "object"
+                  properties:
+                    error:
+                      type: "object"
+                      properties:
+                        code:
+                          type: "string"
+                          const: "RATE_LIMITED"
+                          
+              - status: 500
+                description: "Internal server error"
+                body:
+                  type: "object"
+                  properties:
+                    error:
+                      type: "object"
+                      properties:
+                        code:
+                          type: "string"
+                          const: "INTERNAL_ERROR"
+                        request_id:
+                          type: "string"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPORAL EVOLUTION
+# How the software evolves over time
+# ═══════════════════════════════════════════════════════════════════════════════
+
+temporal_evolution:
+  
+  phase_1_mvp:
+    timeline: ""
+    features: []
+    technical_debt_accepted: []
+    
+  phase_2_growth:
+    timeline: ""
+    features: []
+    technical_improvements: []
+    
+  phase_3_scale:
+    timeline: ""
+    features: []
+    architecture_changes: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NON-FUNCTIONAL REQUIREMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+non_functional:
+  
+  performance:
+    api_response_time_p50: ""
+    api_response_time_p99: ""
+    page_load_time: ""
+    
+  scalability:
+    concurrent_users: ""
+    requests_per_second: ""
+    data_volume: ""
+    
+  reliability:
+    uptime_target: ""
+    rpo: ""                   # Recovery Point Objective
+    rto: ""                   # Recovery Time Objective
+    
+  security:
+    authentication: []
+    authorization: ""
+    encryption: ""
+    compliance: []

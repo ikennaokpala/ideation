@@ -1,0 +1,796 @@
+# LOGIC.YAML DSL SCHEMA
+# Executable specification for business logic
+# 
+# Generates:
+# - Service classes/modules
+# - State machines (XState, custom)
+# - Workflow engines
+# - Validation schemas (Zod, Yup, JSON Schema)
+# - Event handlers
+# - Scheduled tasks
+#
+# Simulation:
+# - Workflow replay/stepping
+# - State machine visualization
+# - Rule evaluation testing
+
+$schema: "https://sparc-dsl.dev/schemas/logic.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""
+  description: ""
+  version: "0.1.0"
+  
+  targets:
+    state_machine: "xstate"   # xstate | custom | none
+    validation: "zod"         # zod | yup | json-schema
+    workflow: "temporal"      # temporal | custom | none
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATIONS
+# Input validation schemas
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validations:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # VALIDATION: User Registration
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "user_registration"
+    description: "Validate user registration input"
+    
+    schema:
+      type: "object"
+      required: ["email", "password"]
+      
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          max_length: 255
+          transform: "lowercase"
+          messages:
+            format: "Please enter a valid email address"
+            required: "Email is required"
+            
+        password:
+          type: "string"
+          min_length: 8
+          max_length: 128
+          rules:
+            - name: "has_uppercase"
+              pattern: "[A-Z]"
+              message: "Password must contain at least one uppercase letter"
+            - name: "has_lowercase"
+              pattern: "[a-z]"
+              message: "Password must contain at least one lowercase letter"
+            - name: "has_number"
+              pattern: "[0-9]"
+              message: "Password must contain at least one number"
+            - name: "has_special"
+              pattern: "[!@#$%^&*(),.?\":{}|<>]"
+              message: "Password must contain at least one special character"
+              
+        name:
+          type: "string"
+          max_length: 100
+          optional: true
+          
+    # Generate both frontend and backend validation
+    targets:
+      - "frontend"            # Zod schema for React
+      - "backend"             # Same schema for API validation
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # VALIDATION: Create Notification
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "create_notification"
+    description: "Validate notification creation"
+    
+    schema:
+      type: "object"
+      required: ["channel", "recipients", "content"]
+      
+      properties:
+        channel:
+          type: "enum"
+          enum_ref: "data.yaml#/enums/channel_type"
+          
+        recipients:
+          type: "array"
+          min_items: 1
+          max_items: 10000
+          items:
+            type: "object"
+            required: ["id"]
+            properties:
+              id:
+                type: "uuid"
+              variables:
+                type: "object"
+                additional_properties: true
+                
+        content:
+          type: "object"
+          
+          # Conditional schema based on channel
+          discriminator: "{{channel}}"
+          
+          variants:
+            email:
+              required: ["subject", "body"]
+              properties:
+                subject:
+                  type: "string"
+                  max_length: 200
+                body:
+                  type: "string"
+                  max_length: 50000
+                reply_to:
+                  type: "string"
+                  format: "email"
+                  optional: true
+                  
+            sms:
+              required: ["body"]
+              properties:
+                body:
+                  type: "string"
+                  max_length: 1600
+                  
+            push:
+              required: ["title", "body"]
+              properties:
+                title:
+                  type: "string"
+                  max_length: 100
+                body:
+                  type: "string"
+                  max_length: 500
+                data:
+                  type: "object"
+                  optional: true
+                  
+        scheduled_at:
+          type: "datetime"
+          optional: true
+          rules:
+            - name: "future_date"
+              condition: "value > now()"
+              message: "Scheduled time must be in the future"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STATE MACHINES
+# Stateful entity behaviors
+# ═══════════════════════════════════════════════════════════════════════════════
+
+state_machines:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STATE MACHINE: Notification
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "notification"
+    description: "Notification lifecycle state machine"
+    entity_ref: "data.yaml#/entities/notification"
+    
+    initial: "pending"
+    
+    context:
+      - name: "retry_count"
+        type: "number"
+        default: 0
+      - name: "last_error"
+        type: "string"
+        default: null
+      - name: "provider_response"
+        type: "object"
+        default: null
+        
+    states:
+      
+      - name: "pending"
+        description: "Awaiting processing"
+        on_entry:
+          - action: "log"
+            params:
+              message: "Notification created"
+              level: "info"
+              
+      - name: "validating"
+        description: "Validating recipient and content"
+        
+      - name: "queued"
+        description: "In provider queue"
+        
+      - name: "sending"
+        description: "Being sent to provider"
+        
+      - name: "sent"
+        description: "Accepted by provider"
+        
+      - name: "delivered"
+        description: "Confirmed delivered"
+        type: "final"
+        
+      - name: "failed"
+        description: "Delivery failed"
+        type: "final"
+        
+      - name: "bounced"
+        description: "Hard bounce"
+        type: "final"
+        
+      - name: "cancelled"
+        description: "Cancelled by user"
+        type: "final"
+        
+    transitions:
+      
+      - from: "pending"
+        to: "validating"
+        event: "PROCESS"
+        
+      - from: "validating"
+        to: "queued"
+        event: "VALIDATION_PASSED"
+        actions:
+          - action: "assign"
+            params:
+              validated_at: "now()"
+              
+      - from: "validating"
+        to: "failed"
+        event: "VALIDATION_FAILED"
+        actions:
+          - action: "assign"
+            params:
+              last_error: "{{event.error}}"
+              failed_at: "now()"
+              
+      - from: "queued"
+        to: "sending"
+        event: "SEND"
+        guard: "canSend"
+        
+      - from: "sending"
+        to: "sent"
+        event: "PROVIDER_ACCEPTED"
+        actions:
+          - action: "assign"
+            params:
+              provider_response: "{{event.response}}"
+              sent_at: "now()"
+              
+      - from: "sending"
+        to: "queued"
+        event: "PROVIDER_RETRY"
+        guard: "canRetry"
+        actions:
+          - action: "increment"
+            params:
+              field: "retry_count"
+          - action: "assign"
+            params:
+              last_error: "{{event.error}}"
+          - action: "delay"
+            params:
+              duration: "exponential_backoff(retry_count)"
+              
+      - from: "sending"
+        to: "failed"
+        event: "PROVIDER_FAILED"
+        guard: "!canRetry"
+        actions:
+          - action: "assign"
+            params:
+              last_error: "{{event.error}}"
+              failed_at: "now()"
+              
+      - from: "sent"
+        to: "delivered"
+        event: "DELIVERY_CONFIRMED"
+        actions:
+          - action: "assign"
+            params:
+              delivered_at: "now()"
+              
+      - from: "sent"
+        to: "bounced"
+        event: "BOUNCED"
+        actions:
+          - action: "assign"
+            params:
+              bounce_type: "{{event.bounce_type}}"
+              bounced_at: "now()"
+          - action: "call"
+            params:
+              service: "ContactService"
+              method: "handleBounce"
+              args: ["{{recipient_id}}", "{{event.bounce_type}}"]
+              
+      - from: ["pending", "validating", "queued"]
+        to: "cancelled"
+        event: "CANCEL"
+        actions:
+          - action: "assign"
+            params:
+              cancelled_at: "now()"
+              cancelled_by: "{{event.user_id}}"
+              
+    guards:
+      - name: "canSend"
+        condition: "context.retry_count < 3"
+        
+      - name: "canRetry"
+        condition: |
+          context.retry_count < 3 
+          && event.error.retryable === true
+          
+    services:
+      - name: "sendToProvider"
+        invoke: "NotificationService.send"
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STATE MACHINE: User Account
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "user_account"
+    description: "User account lifecycle"
+    entity_ref: "data.yaml#/entities/user"
+    
+    initial: "unverified"
+    
+    states:
+      - name: "unverified"
+      - name: "active"
+      - name: "suspended"
+      - name: "deleted"
+        type: "final"
+        
+    transitions:
+      - from: "unverified"
+        to: "active"
+        event: "VERIFY_EMAIL"
+        guard: "isValidToken"
+        
+      - from: "unverified"
+        to: "deleted"
+        event: "EXPIRE"
+        guard: "isExpired"
+        
+      - from: "active"
+        to: "suspended"
+        event: "SUSPEND"
+        guard: "isAdmin"
+        
+      - from: "suspended"
+        to: "active"
+        event: "REINSTATE"
+        guard: "isAdmin"
+        
+      - from: ["unverified", "active", "suspended"]
+        to: "deleted"
+        event: "DELETE"
+        actions:
+          - action: "call"
+            params:
+              service: "UserService"
+              method: "handleDeletion"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WORKFLOWS
+# Multi-step business processes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+workflows:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # WORKFLOW: User Login
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "user_login"
+    description: "User authentication workflow"
+    trigger: "ui.yaml#/screens/LoginScreen/actions/handleLogin"
+    
+    input:
+      - name: "email"
+        type: "string"
+      - name: "password"
+        type: "string"
+      - name: "remember_me"
+        type: "boolean"
+        default: false
+        
+    output:
+      - name: "user"
+        type: "object"
+      - name: "token"
+        type: "string"
+        
+    steps:
+      
+      - id: "validate_input"
+        name: "Validate credentials format"
+        type: "validation"
+        validation_ref: "user_login_input"
+        on_error:
+          type: "return"
+          error:
+            code: "INVALID_INPUT"
+            message: "{{error.message}}"
+            
+      - id: "find_user"
+        name: "Look up user by email"
+        type: "query"
+        query:
+          entity: "user"
+          where:
+            email: "{{input.email}}"
+            deleted_at: null
+          select: ["id", "email", "password_hash", "email_verified", "status"]
+        on_not_found:
+          type: "return"
+          error:
+            code: "INVALID_CREDENTIALS"
+            message: "Invalid email or password"
+        # Security: same error for not found and wrong password
+        
+      - id: "check_status"
+        name: "Verify account status"
+        type: "condition"
+        conditions:
+          - if: "{{steps.find_user.result.status === 'suspended'}}"
+            then:
+              type: "return"
+              error:
+                code: "ACCOUNT_SUSPENDED"
+                message: "Your account has been suspended"
+          - if: "{{!steps.find_user.result.email_verified}}"
+            then:
+              type: "return"
+              error:
+                code: "EMAIL_NOT_VERIFIED"
+                message: "Please verify your email first"
+                
+      - id: "verify_password"
+        name: "Verify password"
+        type: "call"
+        service: "AuthService"
+        method: "verifyPassword"
+        args:
+          password: "{{input.password}}"
+          hash: "{{steps.find_user.result.password_hash}}"
+        on_error:
+          type: "goto"
+          step: "record_failed_attempt"
+          
+      - id: "check_rate_limit"
+        name: "Check failed attempts"
+        type: "call"
+        service: "RateLimitService"
+        method: "checkLoginAttempts"
+        args:
+          user_id: "{{steps.find_user.result.id}}"
+        on_error:
+          type: "return"
+          error:
+            code: "TOO_MANY_ATTEMPTS"
+            message: "Too many failed attempts. Try again in {{error.retry_after}} minutes"
+            
+      - id: "generate_token"
+        name: "Generate session token"
+        type: "call"
+        service: "AuthService"
+        method: "generateToken"
+        args:
+          user_id: "{{steps.find_user.result.id}}"
+          remember_me: "{{input.remember_me}}"
+          
+      - id: "update_login_time"
+        name: "Update last login timestamp"
+        type: "mutation"
+        mutation:
+          entity: "user"
+          where:
+            id: "{{steps.find_user.result.id}}"
+          set:
+            last_login_at: "now()"
+            
+      - id: "emit_event"
+        name: "Emit login event"
+        type: "event"
+        event:
+          name: "user.logged_in"
+          payload:
+            user_id: "{{steps.find_user.result.id}}"
+            timestamp: "now()"
+            ip: "{{context.request.ip}}"
+            
+      - id: "return_success"
+        name: "Return success"
+        type: "return"
+        value:
+          user:
+            id: "{{steps.find_user.result.id}}"
+            email: "{{steps.find_user.result.email}}"
+          token: "{{steps.generate_token.result}}"
+          
+      # Error branch
+      - id: "record_failed_attempt"
+        name: "Record failed login"
+        type: "call"
+        service: "RateLimitService"
+        method: "recordFailedAttempt"
+        args:
+          user_id: "{{steps.find_user.result.id}}"
+        next: "return_invalid_credentials"
+        
+      - id: "return_invalid_credentials"
+        name: "Return invalid credentials"
+        type: "return"
+        error:
+          code: "INVALID_CREDENTIALS"
+          message: "Invalid email or password"
+          
+  # ─────────────────────────────────────────────────────────────────────────────
+  # WORKFLOW: Send Notification
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "send_notification"
+    description: "Process and send a notification"
+    trigger: "api.yaml#/endpoints/create_notification"
+    
+    input:
+      - name: "notification_id"
+        type: "uuid"
+        
+    steps:
+      - id: "load_notification"
+        name: "Load notification"
+        type: "query"
+        query:
+          entity: "notification"
+          where:
+            id: "{{input.notification_id}}"
+          include:
+            - "recipient"
+            - "organization"
+            
+      - id: "validate_recipient"
+        name: "Validate recipient"
+        type: "condition"
+        conditions:
+          - if: "{{!steps.load_notification.result.recipient}}"
+            then:
+              type: "transition"
+              state_machine: "notification"
+              event: "VALIDATION_FAILED"
+              data:
+                error: "Recipient not found"
+                
+      - id: "check_consent"
+        name: "Check recipient consent"
+        type: "call"
+        service: "ConsentService"
+        method: "checkConsent"
+        args:
+          contact_id: "{{steps.load_notification.result.recipient.id}}"
+          channel: "{{steps.load_notification.result.channel}}"
+          
+      - id: "select_provider"
+        name: "Select best provider"
+        type: "call"
+        service: "ProviderService"
+        method: "selectProvider"
+        args:
+          channel: "{{steps.load_notification.result.channel}}"
+          organization_id: "{{steps.load_notification.result.organization_id}}"
+          
+      - id: "send"
+        name: "Send via provider"
+        type: "call"
+        service: "ProviderService"
+        method: "send"
+        args:
+          provider: "{{steps.select_provider.result}}"
+          notification: "{{steps.load_notification.result}}"
+        retry:
+          max_attempts: 3
+          backoff: "exponential"
+          initial_delay: "1s"
+          
+      - id: "update_status"
+        name: "Update notification status"
+        type: "transition"
+        state_machine: "notification"
+        event: "PROVIDER_ACCEPTED"
+        data:
+          response: "{{steps.send.result}}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RULES
+# Business rules engine
+# ═══════════════════════════════════════════════════════════════════════════════
+
+rules:
+  
+  - name: "rate_limiting"
+    description: "Rate limit rules by plan"
+    
+    rules:
+      - name: "free_plan_daily_limit"
+        condition: |
+          organization.plan === 'free' 
+          && notifications_today >= 100
+        action:
+          type: "reject"
+          error:
+            code: "RATE_LIMIT_EXCEEDED"
+            message: "Daily limit of 100 notifications reached"
+            
+      - name: "pro_plan_daily_limit"
+        condition: |
+          organization.plan === 'pro'
+          && notifications_today >= 10000
+        action:
+          type: "reject"
+          error:
+            code: "RATE_LIMIT_EXCEEDED"
+            message: "Daily limit of 10,000 notifications reached"
+            
+  - name: "notification_routing"
+    description: "Route notifications to appropriate providers"
+    
+    rules:
+      - name: "sms_routing"
+        condition: "channel === 'sms'"
+        action:
+          type: "select"
+          field: "provider"
+          rules:
+            - condition: "recipient.country === 'US'"
+              value: "twilio"
+            - condition: "recipient.country === 'CA'"
+              value: "twilio"
+            - default: "messagebird"
+              
+      - name: "email_routing"
+        condition: "channel === 'email'"
+        action:
+          type: "select"
+          field: "provider"
+          rules:
+            - condition: "organization.plan === 'enterprise'"
+              value: "sendgrid"
+            - default: "postmark"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SCHEDULED TASKS
+# Cron jobs and scheduled work
+# ═══════════════════════════════════════════════════════════════════════════════
+
+scheduled_tasks:
+  
+  - name: "process_scheduled_notifications"
+    description: "Send notifications scheduled for now"
+    schedule: "* * * * *"     # Every minute
+    workflow_ref: "process_scheduled_batch"
+    
+  - name: "cleanup_expired_tokens"
+    description: "Remove expired verification tokens"
+    schedule: "0 2 * * *"     # Daily at 2 AM
+    query:
+      entity: "verification_token"
+      where:
+        expires_at: "< now()"
+      action: "delete"
+      
+  - name: "aggregate_daily_stats"
+    description: "Roll up notification stats"
+    schedule: "0 1 * * *"     # Daily at 1 AM
+    workflow_ref: "aggregate_stats"
+    
+  - name: "send_weekly_digest"
+    description: "Send weekly activity digest"
+    schedule: "0 9 * * 1"     # Mondays at 9 AM
+    workflow_ref: "send_digest"
+    params:
+      period: "week"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EVENTS
+# Domain events
+# ═══════════════════════════════════════════════════════════════════════════════
+
+events:
+  
+  - name: "user.registered"
+    description: "User completed registration"
+    payload:
+      user_id: "uuid"
+      email: "string"
+      timestamp: "datetime"
+    handlers:
+      - workflow_ref: "send_welcome_email"
+      - workflow_ref: "create_default_organization"
+      
+  - name: "user.logged_in"
+    description: "User logged in"
+    payload:
+      user_id: "uuid"
+      timestamp: "datetime"
+      ip: "string"
+    handlers:
+      - service: "AnalyticsService"
+        method: "trackLogin"
+        
+  - name: "notification.delivered"
+    description: "Notification confirmed delivered"
+    payload:
+      notification_id: "uuid"
+      delivered_at: "datetime"
+    handlers:
+      - service: "StatsService"
+        method: "incrementDelivered"
+        
+  - name: "notification.bounced"
+    description: "Notification bounced"
+    payload:
+      notification_id: "uuid"
+      contact_id: "uuid"
+      bounce_type: "string"
+    handlers:
+      - workflow_ref: "handle_bounce"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION
+# Logic testing and replay
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  enabled: true
+  
+  modes:
+    - name: "workflow_replay"
+      description: "Step through workflows"
+      features:
+        - step_by_step: true
+        - breakpoints: true
+        - variable_inspection: true
+        
+    - name: "state_machine_viz"
+      description: "Visualize state machines"
+      output: "mermaid"
+      
+    - name: "rule_testing"
+      description: "Test rule evaluation"
+      features:
+        - input_scenarios: true
+        - expected_outcomes: true
+        
+  test_scenarios:
+    - name: "happy_path_login"
+      workflow: "user_login"
+      input:
+        email: "test@example.com"
+        password: "ValidPass123!"
+      mocks:
+        find_user:
+          result:
+            id: "123"
+            email: "test@example.com"
+            password_hash: "$2b$..."
+            email_verified: true
+            status: "active"
+      expected:
+        success: true
+        has_token: true

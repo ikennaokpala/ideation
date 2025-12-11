@@ -1,0 +1,878 @@
+# API.YAML DSL SCHEMA
+# Executable specification for API layer
+# 
+# Generates:
+# - Express/Fastify/Hono routers
+# - OpenAPI/Swagger documentation
+# - API client SDKs (TypeScript, Python)
+# - Request/response validation
+# - Rate limiting configuration
+#
+# Simulation:
+# - Mock server from spec
+# - Request/response examples
+# - API testing
+
+$schema: "https://sparc-dsl.dev/schemas/api.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""
+  description: ""
+  version: "0.1.0"
+  
+  api:
+    type: "rest"              # rest | graphql | grpc
+    version: "v1"
+    base_path: "/api/v1"
+    
+  targets:
+    framework: "hono"         # express | fastify | hono | none
+    documentation: "openapi"  # openapi | asyncapi | none
+    sdk:
+      - "typescript"
+      - "python"
+      
+  conventions:
+    naming: "snake_case"      # snake_case | camelCase | kebab-case
+    pagination: "cursor"      # cursor | offset | page
+    versioning: "url"         # url | header | query
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPENAPI INFO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+openapi:
+  info:
+    title: "NotifyCommons API"
+    version: "1.0.0"
+    description: |
+      Unified notification API for nonprofits.
+      
+      ## Authentication
+      All endpoints require authentication via Bearer token or API key.
+      
+      ## Rate Limits
+      - Free: 100 requests/minute
+      - Pro: 1000 requests/minute
+      - Enterprise: Custom
+      
+    contact:
+      name: "API Support"
+      email: "api@notifycommons.org"
+      
+    license:
+      name: "MIT"
+      url: "https://opensource.org/licenses/MIT"
+      
+  servers:
+    - url: "https://api.notifycommons.org/v1"
+      description: "Production"
+    - url: "https://staging-api.notifycommons.org/v1"
+      description: "Staging"
+    - url: "http://localhost:3000/api/v1"
+      description: "Local development"
+      
+  tags:
+    - name: "auth"
+      description: "Authentication endpoints"
+    - name: "notifications"
+      description: "Send and manage notifications"
+    - name: "contacts"
+      description: "Manage contact lists"
+    - name: "templates"
+      description: "Message templates"
+    - name: "webhooks"
+      description: "Webhook management"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY SCHEMES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+security:
+  
+  schemes:
+    - name: "bearer_auth"
+      type: "http"
+      scheme: "bearer"
+      bearer_format: "JWT"
+      description: "JWT token from login endpoint"
+      
+    - name: "api_key"
+      type: "apiKey"
+      in: "header"
+      name: "X-API-Key"
+      description: "API key from dashboard"
+      
+  # Default security for all endpoints
+  default: ["bearer_auth", "api_key"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMMON SCHEMAS
+# Reusable request/response schemas
+# ═══════════════════════════════════════════════════════════════════════════════
+
+schemas:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Error Response
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "Error"
+    description: "Standard error response"
+    schema:
+      type: "object"
+      required: ["error"]
+      properties:
+        error:
+          type: "object"
+          required: ["code", "message"]
+          properties:
+            code:
+              type: "string"
+              example: "VALIDATION_ERROR"
+            message:
+              type: "string"
+              example: "Invalid input"
+            details:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  field:
+                    type: "string"
+                  message:
+                    type: "string"
+            request_id:
+              type: "string"
+              format: "uuid"
+              
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Pagination
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "PaginationMeta"
+    description: "Pagination metadata"
+    schema:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "Total number of items"
+        has_more:
+          type: "boolean"
+          description: "Whether more items exist"
+        next_cursor:
+          type: "string"
+          description: "Cursor for next page"
+        prev_cursor:
+          type: "string"
+          description: "Cursor for previous page"
+          
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Notification
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "Notification"
+    description: "Notification object"
+    entity_ref: "data.yaml#/entities/notification"
+    schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        channel:
+          type: "string"
+          enum: ["email", "sms", "push", "webhook"]
+        status:
+          type: "string"
+          enum: ["pending", "queued", "sent", "delivered", "failed", "bounced"]
+        recipient:
+          $ref: "#/schemas/ContactSummary"
+        content:
+          type: "object"
+          description: "Channel-specific content"
+        scheduled_at:
+          type: "string"
+          format: "date-time"
+        sent_at:
+          type: "string"
+          format: "date-time"
+        delivered_at:
+          type: "string"
+          format: "date-time"
+        created_at:
+          type: "string"
+          format: "date-time"
+        metadata:
+          type: "object"
+          additionalProperties: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENDPOINTS
+# API endpoints with full specification
+# ═══════════════════════════════════════════════════════════════════════════════
+
+endpoints:
+  
+  # ═══════════════════════════════════════════════════════════════════════════
+  # AUTH ENDPOINTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # POST /auth/register
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "register"
+    path: "/auth/register"
+    method: "POST"
+    tag: "auth"
+    summary: "Register a new user"
+    description: "Create a new user account. A verification email will be sent."
+    
+    security: []              # No auth required
+    
+    rate_limit:
+      requests: 5
+      window: "1m"
+      by: "ip"
+      
+    request:
+      content_type: "application/json"
+      validation_ref: "logic.yaml#/validations/user_registration"
+      
+      body:
+        type: "object"
+        required: ["email", "password"]
+        properties:
+          email:
+            type: "string"
+            format: "email"
+            example: "user@nonprofit.org"
+          password:
+            type: "string"
+            format: "password"
+            min_length: 8
+            example: "SecurePass123!"
+          name:
+            type: "string"
+            example: "Jane Smith"
+          organization_name:
+            type: "string"
+            example: "Community Helpers"
+            
+    responses:
+      201:
+        description: "User created successfully"
+        body:
+          type: "object"
+          properties:
+            id:
+              type: "string"
+              format: "uuid"
+            email:
+              type: "string"
+            message:
+              type: "string"
+              example: "Verification email sent"
+              
+      400:
+        description: "Validation error"
+        body:
+          $ref: "#/schemas/Error"
+        examples:
+          - name: "Invalid email"
+            value:
+              error:
+                code: "VALIDATION_ERROR"
+                message: "Invalid input"
+                details:
+                  - field: "email"
+                    message: "Invalid email format"
+                    
+          - name: "Weak password"
+            value:
+              error:
+                code: "VALIDATION_ERROR"
+                message: "Invalid input"
+                details:
+                  - field: "password"
+                    message: "Password must contain uppercase, lowercase, number, and special character"
+                    
+      409:
+        description: "Email already exists"
+        body:
+          $ref: "#/schemas/Error"
+        example:
+          error:
+            code: "EMAIL_EXISTS"
+            message: "An account with this email already exists"
+            
+      429:
+        description: "Rate limit exceeded"
+        headers:
+          Retry-After:
+            type: "integer"
+            description: "Seconds until rate limit resets"
+        body:
+          $ref: "#/schemas/Error"
+          
+    handler:
+      workflow_ref: "logic.yaml#/workflows/user_registration"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # POST /auth/login
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "login"
+    path: "/auth/login"
+    method: "POST"
+    tag: "auth"
+    summary: "Authenticate user"
+    description: "Login with email and password to receive JWT token"
+    
+    security: []
+    
+    rate_limit:
+      requests: 10
+      window: "1m"
+      by: "ip"
+      
+    request:
+      body:
+        type: "object"
+        required: ["email", "password"]
+        properties:
+          email:
+            type: "string"
+            format: "email"
+          password:
+            type: "string"
+          remember_me:
+            type: "boolean"
+            default: false
+            
+    responses:
+      200:
+        description: "Login successful"
+        body:
+          type: "object"
+          properties:
+            token:
+              type: "string"
+              description: "JWT access token"
+            refresh_token:
+              type: "string"
+              description: "Refresh token for token renewal"
+            expires_at:
+              type: "string"
+              format: "date-time"
+            user:
+              type: "object"
+              properties:
+                id:
+                  type: "string"
+                  format: "uuid"
+                email:
+                  type: "string"
+                name:
+                  type: "string"
+                organization:
+                  type: "object"
+                  properties:
+                    id:
+                      type: "string"
+                    name:
+                      type: "string"
+                    plan:
+                      type: "string"
+                      
+      401:
+        description: "Invalid credentials"
+        body:
+          $ref: "#/schemas/Error"
+          
+      403:
+        description: "Account issue"
+        body:
+          $ref: "#/schemas/Error"
+        examples:
+          - name: "Email not verified"
+            value:
+              error:
+                code: "EMAIL_NOT_VERIFIED"
+                message: "Please verify your email address"
+          - name: "Account suspended"
+            value:
+              error:
+                code: "ACCOUNT_SUSPENDED"
+                message: "Your account has been suspended"
+                
+    handler:
+      workflow_ref: "logic.yaml#/workflows/user_login"
+      
+  # ═══════════════════════════════════════════════════════════════════════════
+  # NOTIFICATION ENDPOINTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # POST /notifications
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "create_notification"
+    path: "/notifications"
+    method: "POST"
+    tag: "notifications"
+    summary: "Send a notification"
+    description: |
+      Send a notification to one or more recipients.
+      
+      The notification will be queued for processing and sent asynchronously.
+      Use webhooks or polling to track delivery status.
+      
+    security: ["bearer_auth", "api_key"]
+    
+    rate_limit:
+      requests: 100
+      window: "1m"
+      by: "organization"
+      
+    request:
+      validation_ref: "logic.yaml#/validations/create_notification"
+      
+      body:
+        type: "object"
+        required: ["channel", "recipients", "content"]
+        properties:
+          channel:
+            type: "string"
+            enum: ["email", "sms", "push", "webhook"]
+            description: "Delivery channel"
+            
+          recipients:
+            type: "array"
+            min_items: 1
+            max_items: 10000
+            description: "List of recipient contacts"
+            items:
+              type: "object"
+              required: ["id"]
+              properties:
+                id:
+                  type: "string"
+                  format: "uuid"
+                  description: "Contact ID"
+                variables:
+                  type: "object"
+                  description: "Template variables for this recipient"
+                  additionalProperties: true
+                  
+          content:
+            type: "object"
+            description: "Channel-specific content"
+            oneOf:
+              - title: "Email content"
+                properties:
+                  subject:
+                    type: "string"
+                    max_length: 200
+                  body:
+                    type: "string"
+                  body_html:
+                    type: "string"
+                  reply_to:
+                    type: "string"
+                    format: "email"
+                required: ["subject", "body"]
+                
+              - title: "SMS content"
+                properties:
+                  body:
+                    type: "string"
+                    max_length: 1600
+                required: ["body"]
+                
+              - title: "Push content"
+                properties:
+                  title:
+                    type: "string"
+                    max_length: 100
+                  body:
+                    type: "string"
+                    max_length: 500
+                  image_url:
+                    type: "string"
+                    format: "uri"
+                  action_url:
+                    type: "string"
+                    format: "uri"
+                  data:
+                    type: "object"
+                required: ["title", "body"]
+                
+          template_id:
+            type: "string"
+            format: "uuid"
+            description: "Use a saved template instead of inline content"
+            
+          scheduled_at:
+            type: "string"
+            format: "date-time"
+            description: "Schedule for future delivery"
+            
+          metadata:
+            type: "object"
+            description: "Custom metadata for tracking"
+            additionalProperties: true
+            
+          idempotency_key:
+            type: "string"
+            max_length: 64
+            description: "Prevent duplicate sends"
+            
+    responses:
+      202:
+        description: "Notification accepted for processing"
+        body:
+          type: "object"
+          properties:
+            id:
+              type: "string"
+              format: "uuid"
+              description: "Notification batch ID"
+            status:
+              type: "string"
+              enum: ["pending", "queued"]
+            recipient_count:
+              type: "integer"
+            estimated_delivery:
+              type: "string"
+              format: "date-time"
+              
+      400:
+        description: "Validation error"
+        body:
+          $ref: "#/schemas/Error"
+          
+      402:
+        description: "Insufficient credits"
+        body:
+          $ref: "#/schemas/Error"
+          
+      429:
+        description: "Rate limit exceeded"
+        body:
+          $ref: "#/schemas/Error"
+          
+    handler:
+      workflow_ref: "logic.yaml#/workflows/create_notification"
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GET /notifications
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "list_notifications"
+    path: "/notifications"
+    method: "GET"
+    tag: "notifications"
+    summary: "List notifications"
+    description: "Retrieve a paginated list of notifications"
+    
+    security: ["bearer_auth", "api_key"]
+    
+    request:
+      query:
+        - name: "status"
+          type: "string"
+          enum: ["pending", "queued", "sent", "delivered", "failed", "bounced"]
+          description: "Filter by status"
+          
+        - name: "channel"
+          type: "string"
+          enum: ["email", "sms", "push", "webhook"]
+          description: "Filter by channel"
+          
+        - name: "recipient_id"
+          type: "string"
+          format: "uuid"
+          description: "Filter by recipient"
+          
+        - name: "created_after"
+          type: "string"
+          format: "date-time"
+          description: "Filter by creation date"
+          
+        - name: "created_before"
+          type: "string"
+          format: "date-time"
+          description: "Filter by creation date"
+          
+        - name: "cursor"
+          type: "string"
+          description: "Pagination cursor"
+          
+        - name: "limit"
+          type: "integer"
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: "Number of results per page"
+          
+        - name: "sort"
+          type: "string"
+          enum: ["created_at", "-created_at", "sent_at", "-sent_at"]
+          default: "-created_at"
+          description: "Sort order (prefix with - for descending)"
+          
+    responses:
+      200:
+        description: "List of notifications"
+        body:
+          type: "object"
+          properties:
+            data:
+              type: "array"
+              items:
+                $ref: "#/schemas/Notification"
+            meta:
+              $ref: "#/schemas/PaginationMeta"
+              
+    handler:
+      type: "query"
+      query:
+        entity_ref: "data.yaml#/entities/notification"
+        default_sort: "-created_at"
+        filterable: ["status", "channel", "recipient_id"]
+        searchable: []
+        include: ["recipient"]
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GET /notifications/:id
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "get_notification"
+    path: "/notifications/{id}"
+    method: "GET"
+    tag: "notifications"
+    summary: "Get notification details"
+    
+    security: ["bearer_auth", "api_key"]
+    
+    request:
+      path:
+        - name: "id"
+          type: "string"
+          format: "uuid"
+          required: true
+          description: "Notification ID"
+          
+    responses:
+      200:
+        description: "Notification details"
+        body:
+          $ref: "#/schemas/Notification"
+          
+      404:
+        description: "Notification not found"
+        body:
+          $ref: "#/schemas/Error"
+          
+    handler:
+      type: "query"
+      query:
+        entity_ref: "data.yaml#/entities/notification"
+        include: ["recipient", "delivery_attempts"]
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DELETE /notifications/:id
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - id: "cancel_notification"
+    path: "/notifications/{id}"
+    method: "DELETE"
+    tag: "notifications"
+    summary: "Cancel a pending notification"
+    description: "Cancel a notification that hasn't been sent yet"
+    
+    security: ["bearer_auth", "api_key"]
+    
+    request:
+      path:
+        - name: "id"
+          type: "string"
+          format: "uuid"
+          required: true
+          
+    responses:
+      200:
+        description: "Notification cancelled"
+        body:
+          type: "object"
+          properties:
+            id:
+              type: "string"
+            status:
+              type: "string"
+              enum: ["cancelled"]
+              
+      400:
+        description: "Cannot cancel - already sent"
+        body:
+          $ref: "#/schemas/Error"
+          
+      404:
+        description: "Not found"
+        body:
+          $ref: "#/schemas/Error"
+          
+    handler:
+      type: "transition"
+      state_machine_ref: "logic.yaml#/state_machines/notification"
+      event: "CANCEL"
+      guard: "status in ['pending', 'queued']"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WEBHOOKS (Outbound)
+# Events we send to customers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+webhooks:
+  
+  events:
+    - name: "notification.sent"
+      description: "Notification was sent to provider"
+      payload:
+        type: "object"
+        properties:
+          event:
+            type: "string"
+            const: "notification.sent"
+          timestamp:
+            type: "string"
+            format: "date-time"
+          data:
+            type: "object"
+            properties:
+              notification_id:
+                type: "string"
+              channel:
+                type: "string"
+              recipient_id:
+                type: "string"
+              sent_at:
+                type: "string"
+                format: "date-time"
+                
+    - name: "notification.delivered"
+      description: "Notification confirmed delivered"
+      payload:
+        type: "object"
+        properties:
+          event:
+            type: "string"
+            const: "notification.delivered"
+          data:
+            type: "object"
+            properties:
+              notification_id:
+                type: "string"
+              delivered_at:
+                type: "string"
+                format: "date-time"
+                
+    - name: "notification.failed"
+      description: "Notification delivery failed"
+      payload:
+        type: "object"
+        properties:
+          event:
+            type: "string"
+            const: "notification.failed"
+          data:
+            type: "object"
+            properties:
+              notification_id:
+                type: "string"
+              error_code:
+                type: "string"
+              error_message:
+                type: "string"
+                
+  delivery:
+    retry:
+      max_attempts: 5
+      backoff: "exponential"
+      initial_delay: "1m"
+    timeout: "30s"
+    signature:
+      algorithm: "HMAC-SHA256"
+      header: "X-Webhook-Signature"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION
+# Mock server and testing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  enabled: true
+  
+  modes:
+    - name: "mock_server"
+      description: "Generate mock server from spec"
+      port: 3001
+      features:
+        - response_examples: true
+        - validation: true
+        - latency_simulation: true
+        
+    - name: "sdk_generation"
+      description: "Generate client SDKs"
+      targets:
+        - language: "typescript"
+          output: "./sdk/typescript"
+        - language: "python"
+          output: "./sdk/python"
+          
+    - name: "postman_collection"
+      description: "Generate Postman collection"
+      output: "./postman/collection.json"
+      
+  test_scenarios:
+    - name: "full_notification_flow"
+      steps:
+        - endpoint: "login"
+          method: "POST"
+          body:
+            email: "test@example.com"
+            password: "TestPass123!"
+          extract:
+            token: "$.token"
+            
+        - endpoint: "create_notification"
+          method: "POST"
+          headers:
+            Authorization: "Bearer {{token}}"
+          body:
+            channel: "email"
+            recipients:
+              - id: "{{contact_id}}"
+            content:
+              subject: "Test"
+              body: "Hello"
+          expect:
+            status: 202
+            
+        - endpoint: "get_notification"
+          method: "GET"
+          headers:
+            Authorization: "Bearer {{token}}"
+          expect:
+            status: 200
+            body:
+              status: "pending"

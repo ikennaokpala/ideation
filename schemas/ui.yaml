@@ -1,0 +1,805 @@
+# UI.YAML DSL SCHEMA
+# Executable specification for user interface
+# 
+# Generates:
+# - React/Next.js components
+# - React Native screens
+# - Flutter widgets
+# - Vue components
+# - HTML/CSS templates
+#
+# Simulation:
+# - Interactive wireframe preview
+# - Component storybook
+# - Responsive breakpoint testing
+
+$schema: "https://sparc-dsl.dev/schemas/ui.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""
+  description: ""
+  version: "0.1.0"
+  
+  target:
+    platform: "web"           # web | mobile | desktop | cross-platform
+    framework: "react"        # react | vue | svelte | flutter | react-native
+    
+  styling:
+    system: "tailwind"        # tailwind | css-modules | styled-components | native
+    theme_ref: "theme.yaml"   # Reference to theme file
+    
+  conventions:
+    component_naming: "PascalCase"
+    file_naming: "kebab-case"
+    
+# ═══════════════════════════════════════════════════════════════════════════════
+# DESIGN TOKENS
+# Reusable design values
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tokens:
+  
+  colors:
+    primary: "#2563eb"
+    primary_hover: "#1d4ed8"
+    secondary: "#64748b"
+    success: "#22c55e"
+    warning: "#f59e0b"
+    error: "#ef4444"
+    background: "#ffffff"
+    surface: "#f8fafc"
+    text: "#1e293b"
+    text_muted: "#64748b"
+    border: "#e2e8f0"
+    
+  spacing:
+    xs: "0.25rem"
+    sm: "0.5rem"
+    md: "1rem"
+    lg: "1.5rem"
+    xl: "2rem"
+    2xl: "3rem"
+    
+  typography:
+    font_family: "Inter, system-ui, sans-serif"
+    font_family_mono: "JetBrains Mono, monospace"
+    
+    sizes:
+      xs: "0.75rem"
+      sm: "0.875rem"
+      base: "1rem"
+      lg: "1.125rem"
+      xl: "1.25rem"
+      2xl: "1.5rem"
+      3xl: "2rem"
+      
+  breakpoints:
+    sm: "640px"
+    md: "768px"
+    lg: "1024px"
+    xl: "1280px"
+    
+  shadows:
+    sm: "0 1px 2px rgba(0,0,0,0.05)"
+    md: "0 4px 6px rgba(0,0,0,0.1)"
+    lg: "0 10px 15px rgba(0,0,0,0.1)"
+    
+  radii:
+    sm: "0.25rem"
+    md: "0.375rem"
+    lg: "0.5rem"
+    full: "9999px"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAYOUTS
+# Page layout templates
+# ═══════════════════════════════════════════════════════════════════════════════
+
+layouts:
+  
+  - name: "app_shell"
+    description: "Main application layout with sidebar"
+    
+    structure:
+      type: "flex"
+      direction: "row"
+      
+      children:
+        - slot: "sidebar"
+          width: "256px"
+          responsive:
+            below_lg: "hidden"
+            
+        - slot: "main"
+          flex: 1
+          children:
+            - slot: "header"
+              height: "64px"
+              sticky: true
+            - slot: "content"
+              flex: 1
+              scroll: true
+            - slot: "footer"
+              height: "auto"
+              optional: true
+              
+  - name: "auth_layout"
+    description: "Centered card for auth pages"
+    
+    structure:
+      type: "flex"
+      direction: "column"
+      align: "center"
+      justify: "center"
+      min_height: "100vh"
+      background: "$surface"
+      
+      children:
+        - slot: "logo"
+          margin_bottom: "$xl"
+        - slot: "card"
+          width: "400px"
+          max_width: "90vw"
+          padding: "$xl"
+          background: "$background"
+          shadow: "$lg"
+          radius: "$lg"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPONENTS
+# Reusable UI components
+# ═══════════════════════════════════════════════════════════════════════════════
+
+components:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # COMPONENT: Button
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "Button"
+    description: "Primary action button"
+    category: "actions"
+    
+    props:
+      - name: "variant"
+        type: "enum"
+        values: ["primary", "secondary", "outline", "ghost", "danger"]
+        default: "primary"
+        
+      - name: "size"
+        type: "enum"
+        values: ["sm", "md", "lg"]
+        default: "md"
+        
+      - name: "disabled"
+        type: "boolean"
+        default: false
+        
+      - name: "loading"
+        type: "boolean"
+        default: false
+        
+      - name: "icon"
+        type: "icon"
+        optional: true
+        
+      - name: "iconPosition"
+        type: "enum"
+        values: ["left", "right"]
+        default: "left"
+        
+      - name: "fullWidth"
+        type: "boolean"
+        default: false
+        
+      - name: "onClick"
+        type: "function"
+        required: true
+        
+    slots:
+      - name: "default"
+        description: "Button label"
+        
+    styles:
+      base: |
+        inline-flex items-center justify-center font-medium
+        rounded-$md transition-colors focus:outline-none
+        focus:ring-2 focus:ring-offset-2 disabled:opacity-50
+        disabled:cursor-not-allowed
+        
+      variants:
+        primary: "bg-$primary text-white hover:bg-$primary_hover focus:ring-$primary"
+        secondary: "bg-$secondary text-white hover:bg-$secondary/90"
+        outline: "border border-$border bg-transparent hover:bg-$surface"
+        ghost: "bg-transparent hover:bg-$surface"
+        danger: "bg-$error text-white hover:bg-$error/90"
+        
+      sizes:
+        sm: "h-8 px-3 text-$sm"
+        md: "h-10 px-4 text-$base"
+        lg: "h-12 px-6 text-$lg"
+        
+    states:
+      loading:
+        show_spinner: true
+        disable_click: true
+        
+    accessibility:
+      role: "button"
+      aria_disabled: "{{disabled}}"
+      aria_busy: "{{loading}}"
+      
+    examples:
+      - name: "Primary button"
+        props:
+          variant: "primary"
+          size: "md"
+        slot: "Save changes"
+        
+      - name: "Loading state"
+        props:
+          variant: "primary"
+          loading: true
+        slot: "Saving..."
+        
+  # ─────────────────────────────────────────────────────────────────────────────
+  # COMPONENT: Input
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "Input"
+    description: "Text input field"
+    category: "forms"
+    
+    props:
+      - name: "type"
+        type: "enum"
+        values: ["text", "email", "password", "number", "tel", "url", "search"]
+        default: "text"
+        
+      - name: "label"
+        type: "string"
+        optional: true
+        
+      - name: "placeholder"
+        type: "string"
+        optional: true
+        
+      - name: "value"
+        type: "string"
+        required: true
+        
+      - name: "onChange"
+        type: "function"
+        required: true
+        
+      - name: "error"
+        type: "string"
+        optional: true
+        
+      - name: "hint"
+        type: "string"
+        optional: true
+        
+      - name: "disabled"
+        type: "boolean"
+        default: false
+        
+      - name: "required"
+        type: "boolean"
+        default: false
+        
+    styles:
+      base: |
+        w-full h-10 px-3 rounded-$md border border-$border
+        bg-$background text-$text placeholder:text-$text_muted
+        focus:outline-none focus:ring-2 focus:ring-$primary focus:border-transparent
+        disabled:bg-$surface disabled:cursor-not-allowed
+        
+      error: "border-$error focus:ring-$error"
+      
+    structure:
+      - element: "div"
+        class: "space-y-1"
+        children:
+          - element: "label"
+            condition: "{{label}}"
+            class: "block text-$sm font-medium text-$text"
+            content: "{{label}}"
+          - element: "input"
+            class: "{{styles.base}} {{error ? styles.error : ''}}"
+          - element: "p"
+            condition: "{{error}}"
+            class: "text-$sm text-$error"
+            content: "{{error}}"
+          - element: "p"
+            condition: "{{hint && !error}}"
+            class: "text-$sm text-$text_muted"
+            content: "{{hint}}"
+            
+    accessibility:
+      aria_invalid: "{{!!error}}"
+      aria_describedby: "{{error ? errorId : hint ? hintId : undefined}}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # COMPONENT: DataTable
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "DataTable"
+    description: "Sortable, filterable data table"
+    category: "data-display"
+    
+    props:
+      - name: "columns"
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            key: "string"
+            label: "string"
+            sortable: "boolean"
+            width: "string"
+            render: "function"
+        required: true
+        
+      - name: "data"
+        type: "array"
+        required: true
+        
+      - name: "loading"
+        type: "boolean"
+        default: false
+        
+      - name: "pagination"
+        type: "object"
+        properties:
+          page: "number"
+          pageSize: "number"
+          total: "number"
+          onPageChange: "function"
+        optional: true
+        
+      - name: "sorting"
+        type: "object"
+        properties:
+          column: "string"
+          direction: "enum:asc|desc"
+          onSort: "function"
+        optional: true
+        
+      - name: "selection"
+        type: "object"
+        properties:
+          selected: "array"
+          onSelect: "function"
+          mode: "enum:single|multiple"
+        optional: true
+        
+      - name: "emptyState"
+        type: "component"
+        optional: true
+        
+    data_binding:
+      source: "api"           # Where data comes from
+      endpoint_ref: "api.yaml#/endpoints/list_notifications"
+      auto_fetch: true
+      refetch_on:
+        - "pagination.page"
+        - "sorting.column"
+        - "sorting.direction"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SCREENS
+# Application screens/pages
+# ═══════════════════════════════════════════════════════════════════════════════
+
+screens:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SCREEN: Login
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "LoginScreen"
+    route: "/login"
+    layout: "auth_layout"
+    title: "Sign In"
+    
+    auth:
+      required: false
+      redirect_if_authenticated: "/dashboard"
+      
+    state:
+      - name: "email"
+        type: "string"
+        default: ""
+      - name: "password"
+        type: "string"
+        default: ""
+      - name: "error"
+        type: "string"
+        default: null
+      - name: "loading"
+        type: "boolean"
+        default: false
+        
+    content:
+      - slot: "logo"
+        component: "Logo"
+        props:
+          size: "lg"
+          
+      - slot: "card"
+        children:
+          - component: "Heading"
+            props:
+              level: 1
+              size: "2xl"
+              align: "center"
+            content: "Welcome back"
+            
+          - component: "Text"
+            props:
+              color: "muted"
+              align: "center"
+              margin_bottom: "xl"
+            content: "Sign in to your account"
+            
+          - component: "Form"
+            props:
+              onSubmit: "handleLogin"
+            children:
+              - component: "Input"
+                props:
+                  type: "email"
+                  label: "Email"
+                  placeholder: "you@example.com"
+                  value: "{{state.email}}"
+                  onChange: "setEmail"
+                  error: "{{state.error && state.error.field === 'email' ? state.error.message : null}}"
+                  required: true
+                  
+              - component: "Input"
+                props:
+                  type: "password"
+                  label: "Password"
+                  placeholder: "••••••••"
+                  value: "{{state.password}}"
+                  onChange: "setPassword"
+                  error: "{{state.error && state.error.field === 'password' ? state.error.message : null}}"
+                  required: true
+                  margin_top: "md"
+                  
+              - component: "Flex"
+                props:
+                  justify: "between"
+                  align: "center"
+                  margin_top: "md"
+                children:
+                  - component: "Checkbox"
+                    props:
+                      label: "Remember me"
+                  - component: "Link"
+                    props:
+                      href: "/forgot-password"
+                    content: "Forgot password?"
+                    
+              - component: "Button"
+                props:
+                  type: "submit"
+                  variant: "primary"
+                  fullWidth: true
+                  loading: "{{state.loading}}"
+                  margin_top: "lg"
+                content: "Sign in"
+                
+          - component: "Divider"
+            props:
+              margin_y: "lg"
+            content: "or continue with"
+            
+          - component: "Flex"
+            props:
+              gap: "md"
+            children:
+              - component: "Button"
+                props:
+                  variant: "outline"
+                  fullWidth: true
+                  icon: "google"
+                  onClick: "handleGoogleLogin"
+                content: "Google"
+                
+              - component: "Button"
+                props:
+                  variant: "outline"
+                  fullWidth: true
+                  icon: "github"
+                  onClick: "handleGithubLogin"
+                content: "GitHub"
+                
+          - component: "Text"
+            props:
+              align: "center"
+              margin_top: "lg"
+              size: "sm"
+            children:
+              - content: "Don't have an account? "
+              - component: "Link"
+                props:
+                  href: "/register"
+                content: "Sign up"
+                
+    actions:
+      - name: "handleLogin"
+        trigger: "form_submit"
+        logic_ref: "logic.yaml#/workflows/user_login"
+        
+      - name: "handleGoogleLogin"
+        trigger: "button_click"
+        logic_ref: "logic.yaml#/workflows/oauth_login"
+        params:
+          provider: "google"
+          
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SCREEN: Dashboard
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "DashboardScreen"
+    route: "/dashboard"
+    layout: "app_shell"
+    title: "Dashboard"
+    
+    auth:
+      required: true
+      roles: ["user", "admin"]
+      
+    data:
+      - name: "stats"
+        source: "api"
+        endpoint_ref: "api.yaml#/endpoints/get_dashboard_stats"
+        auto_fetch: true
+        
+      - name: "recentNotifications"
+        source: "api"
+        endpoint_ref: "api.yaml#/endpoints/list_notifications"
+        params:
+          limit: 5
+          sort: "-created_at"
+        auto_fetch: true
+        
+    content:
+      - slot: "header"
+        children:
+          - component: "PageHeader"
+            props:
+              title: "Dashboard"
+              subtitle: "Overview of your notification activity"
+              
+      - slot: "content"
+        children:
+          - component: "Grid"
+            props:
+              columns: 4
+              gap: "lg"
+              responsive:
+                below_lg: 2
+                below_sm: 1
+            children:
+              - component: "StatCard"
+                props:
+                  title: "Total Sent"
+                  value: "{{data.stats.total_sent}}"
+                  change: "{{data.stats.sent_change}}"
+                  icon: "send"
+                  
+              - component: "StatCard"
+                props:
+                  title: "Delivered"
+                  value: "{{data.stats.delivered}}"
+                  change: "{{data.stats.delivered_change}}"
+                  icon: "check-circle"
+                  color: "success"
+                  
+              - component: "StatCard"
+                props:
+                  title: "Failed"
+                  value: "{{data.stats.failed}}"
+                  change: "{{data.stats.failed_change}}"
+                  icon: "x-circle"
+                  color: "error"
+                  
+              - component: "StatCard"
+                props:
+                  title: "Pending"
+                  value: "{{data.stats.pending}}"
+                  icon: "clock"
+                  color: "warning"
+                  
+          - component: "Card"
+            props:
+              margin_top: "xl"
+            children:
+              - component: "CardHeader"
+                props:
+                  title: "Recent Notifications"
+                  action:
+                    label: "View all"
+                    href: "/notifications"
+                    
+              - component: "DataTable"
+                props:
+                  columns:
+                    - key: "recipient"
+                      label: "Recipient"
+                    - key: "channel"
+                      label: "Channel"
+                    - key: "status"
+                      label: "Status"
+                    - key: "created_at"
+                      label: "Sent"
+                  data: "{{data.recentNotifications}}"
+                  loading: "{{data.recentNotifications.loading}}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NAVIGATION
+# App navigation structure
+# ═══════════════════════════════════════════════════════════════════════════════
+
+navigation:
+  
+  sidebar:
+    - label: "Dashboard"
+      icon: "home"
+      route: "/dashboard"
+      
+    - label: "Notifications"
+      icon: "bell"
+      route: "/notifications"
+      badge:
+        source: "{{data.pendingCount}}"
+        color: "warning"
+        
+    - label: "Contacts"
+      icon: "users"
+      route: "/contacts"
+      
+    - label: "Templates"
+      icon: "file-text"
+      route: "/templates"
+      
+    - divider: true
+    
+    - label: "Settings"
+      icon: "settings"
+      children:
+        - label: "Organization"
+          route: "/settings/organization"
+        - label: "API Keys"
+          route: "/settings/api-keys"
+        - label: "Integrations"
+          route: "/settings/integrations"
+          
+  header:
+    - slot: "search"
+      component: "SearchInput"
+      
+    - slot: "actions"
+      children:
+        - component: "NotificationBell"
+        - component: "UserMenu"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORMS
+# Complex form definitions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+forms:
+  
+  - name: "CreateNotificationForm"
+    description: "Multi-step notification creation"
+    
+    steps:
+      - name: "recipients"
+        title: "Select Recipients"
+        fields:
+          - name: "recipient_type"
+            type: "radio"
+            options:
+              - value: "individual"
+                label: "Individual"
+              - value: "segment"
+                label: "Segment"
+              - value: "all"
+                label: "All contacts"
+                
+          - name: "recipients"
+            type: "multi-select"
+            condition: "{{recipient_type === 'individual'}}"
+            data_source: "api.yaml#/endpoints/list_contacts"
+            
+      - name: "content"
+        title: "Compose Message"
+        fields:
+          - name: "channel"
+            type: "select"
+            options_ref: "data.yaml#/enums/channel_type"
+            
+          - name: "subject"
+            type: "text"
+            condition: "{{channel === 'email'}}"
+            validation:
+              required: true
+              max_length: 200
+              
+          - name: "body"
+            type: "rich-text"
+            validation:
+              required: true
+              max_length: 5000
+              
+      - name: "schedule"
+        title: "Schedule"
+        fields:
+          - name: "send_time"
+            type: "radio"
+            options:
+              - value: "now"
+                label: "Send immediately"
+              - value: "scheduled"
+                label: "Schedule for later"
+                
+          - name: "scheduled_at"
+            type: "datetime"
+            condition: "{{send_time === 'scheduled'}}"
+            
+    validation_ref: "logic.yaml#/validations/create_notification"
+    submit_action: "api.yaml#/endpoints/create_notification"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION
+# UI preview and testing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  enabled: true
+  
+  modes:
+    - name: "storybook"
+      description: "Component isolation testing"
+      output: "storybook"
+      
+    - name: "wireframe"
+      description: "Low-fidelity preview"
+      output: "html"
+      styles: "minimal"
+      
+    - name: "prototype"
+      description: "Interactive prototype"
+      output: "html"
+      mock_data: true
+      mock_actions: true
+      
+  responsive_testing:
+    viewports:
+      - name: "mobile"
+        width: 375
+        height: 667
+      - name: "tablet"
+        width: 768
+        height: 1024
+      - name: "desktop"
+        width: 1440
+        height: 900
+        
+  accessibility_testing:
+    wcag_level: "AA"
+    checks:
+      - "color-contrast"
+      - "keyboard-navigation"
+      - "screen-reader"
+      - "focus-indicators"

@@ -1,0 +1,377 @@
+# DATA.YAML DSL SCHEMA
+# Executable specification for data layer
+# 
+# Generates:
+# - SQL migrations (Postgres, MySQL, SQLite)
+# - ORM models (Prisma, Drizzle, SQLAlchemy, TypeORM)
+# - Seed data scripts
+# - Database documentation
+#
+# Simulation:
+# - In-memory database for testing
+# - Migration dry-run
+# - Relationship validation
+
+$schema: "https://sparc-dsl.dev/schemas/data.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  name: ""                    # e.g., "notifycommons-data"
+  description: ""
+  version: "0.1.0"
+  
+  database:
+    primary: "postgresql"     # postgresql | mysql | sqlite | mongodb
+    version: "15"
+    
+  orm:
+    target: "drizzle"         # prisma | drizzle | sqlalchemy | typeorm | none
+    
+  conventions:
+    naming: "snake_case"      # snake_case | camelCase | PascalCase
+    timestamps: true          # auto-add created_at, updated_at
+    soft_delete: true         # auto-add deleted_at
+    uuid_primary_keys: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENUMS
+# Shared enumerated types
+# ═══════════════════════════════════════════════════════════════════════════════
+
+enums:
+  
+  - name: "notification_status"
+    description: "Status of a notification"
+    values:
+      - value: "pending"
+        description: "Awaiting processing"
+      - value: "queued"
+        description: "In provider queue"
+      - value: "sent"
+        description: "Sent to provider"
+      - value: "delivered"
+        description: "Confirmed delivered"
+      - value: "failed"
+        description: "Delivery failed"
+      - value: "bounced"
+        description: "Hard bounce"
+        
+  - name: "channel_type"
+    values:
+      - value: "email"
+      - value: "sms"
+      - value: "push"
+      - value: "webhook"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTITIES
+# Database tables/collections
+# ═══════════════════════════════════════════════════════════════════════════════
+
+entities:
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ENTITY: User
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "user"
+    description: "Application user"
+    table_name: "users"       # Override if different from name
+    
+    fields:
+      
+      - name: "id"
+        type: "uuid"
+        primary_key: true
+        default: "gen_random_uuid()"
+        
+      - name: "email"
+        type: "string"
+        length: 255
+        nullable: false
+        unique: true
+        validators:
+          - type: "email"
+          - type: "max_length"
+            value: 255
+            
+      - name: "password_hash"
+        type: "string"
+        length: 255
+        nullable: true        # Null for OAuth-only users
+        sensitive: true       # Exclude from logs, API responses
+        
+      - name: "name"
+        type: "string"
+        length: 100
+        nullable: true
+        
+      - name: "avatar_url"
+        type: "string"
+        length: 500
+        nullable: true
+        
+      - name: "email_verified"
+        type: "boolean"
+        default: false
+        
+      - name: "email_verified_at"
+        type: "timestamp"
+        nullable: true
+        
+      - name: "last_login_at"
+        type: "timestamp"
+        nullable: true
+        
+      - name: "metadata"
+        type: "jsonb"
+        nullable: true
+        default: "{}"
+        
+    # Auto-added by conventions.timestamps: created_at, updated_at
+    # Auto-added by conventions.soft_delete: deleted_at
+    
+    indexes:
+      - name: "idx_users_email"
+        columns: ["email"]
+        unique: true
+        
+      - name: "idx_users_created"
+        columns: ["created_at"]
+        
+    constraints:
+      - type: "check"
+        name: "chk_email_format"
+        expression: "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
+        
+    triggers:
+      - name: "trg_users_updated"
+        timing: "before"
+        event: "update"
+        action: "set_updated_at()"
+        
+    # Row-level security (for multi-tenant)
+    rls:
+      enabled: false
+      policies: []
+      
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ENTITY: Organization
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  - name: "organization"
+    description: "Tenant organization"
+    table_name: "organizations"
+    
+    fields:
+      - name: "id"
+        type: "uuid"
+        primary_key: true
+        default: "gen_random_uuid()"
+        
+      - name: "name"
+        type: "string"
+        length: 100
+        nullable: false
+        
+      - name: "slug"
+        type: "string"
+        length: 50
+        nullable: false
+        unique: true
+        validators:
+          - type: "pattern"
+            value: "^[a-z0-9-]+$"
+            message: "Slug must be lowercase alphanumeric with hyphens"
+            
+      - name: "plan"
+        type: "enum"
+        enum_ref: "plan_type"
+        default: "free"
+        
+      - name: "settings"
+        type: "jsonb"
+        default: "{}"
+        
+    indexes:
+      - name: "idx_orgs_slug"
+        columns: ["slug"]
+        unique: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RELATIONSHIPS
+# Foreign keys and associations
+# ═══════════════════════════════════════════════════════════════════════════════
+
+relationships:
+  
+  - name: "user_belongs_to_organization"
+    type: "many_to_one"
+    from:
+      entity: "user"
+      field: "organization_id"      # Auto-created
+    to:
+      entity: "organization"
+      field: "id"
+    on_delete: "cascade"
+    on_update: "cascade"
+    nullable: false
+    
+  - name: "organization_has_many_users"
+    type: "one_to_many"
+    from:
+      entity: "organization"
+    to:
+      entity: "user"
+      foreign_key: "organization_id"
+    # Virtual relationship, generates accessor methods
+    
+  - name: "user_has_many_notifications"
+    type: "one_to_many"
+    from:
+      entity: "user"
+    to:
+      entity: "notification"
+      foreign_key: "user_id"
+      
+  - name: "notification_belongs_to_user"
+    type: "many_to_one"
+    from:
+      entity: "notification"
+      field: "user_id"
+    to:
+      entity: "user"
+      field: "id"
+    on_delete: "cascade"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEWS
+# Database views for complex queries
+# ═══════════════════════════════════════════════════════════════════════════════
+
+views:
+  
+  - name: "notification_stats"
+    description: "Aggregated notification statistics"
+    materialized: false
+    
+    query: |
+      SELECT 
+        organization_id,
+        channel,
+        status,
+        DATE_TRUNC('day', created_at) as date,
+        COUNT(*) as count
+      FROM notifications
+      WHERE deleted_at IS NULL
+      GROUP BY organization_id, channel, status, DATE_TRUNC('day', created_at)
+      
+  - name: "active_users"
+    description: "Users active in last 30 days"
+    materialized: true
+    refresh: "daily"
+    
+    query: |
+      SELECT * FROM users
+      WHERE last_login_at > NOW() - INTERVAL '30 days'
+        AND deleted_at IS NULL
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FUNCTIONS
+# Database functions and procedures
+# ═══════════════════════════════════════════════════════════════════════════════
+
+functions:
+  
+  - name: "set_updated_at"
+    language: "plpgsql"
+    returns: "trigger"
+    body: |
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      
+  - name: "generate_slug"
+    language: "plpgsql"
+    returns: "text"
+    parameters:
+      - name: "input_text"
+        type: "text"
+    body: |
+      BEGIN
+        RETURN LOWER(REGEXP_REPLACE(input_text, '[^a-zA-Z0-9]+', '-', 'g'));
+      END;
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SEEDS
+# Initial data for development/testing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+seeds:
+  
+  environments: ["development", "test"]  # Don't seed production
+  
+  data:
+    - entity: "organization"
+      records:
+        - id: "00000000-0000-0000-0000-000000000001"
+          name: "Demo Organization"
+          slug: "demo"
+          plan: "pro"
+          
+    - entity: "user"
+      records:
+        - id: "00000000-0000-0000-0000-000000000001"
+          email: "admin@demo.org"
+          name: "Demo Admin"
+          organization_id: "00000000-0000-0000-0000-000000000001"
+          email_verified: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIGRATIONS
+# Migration history and pending changes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+migrations:
+  
+  strategy: "timestamped"     # timestamped | sequential
+  
+  pending:
+    - version: "20250101000000"
+      name: "initial_schema"
+      description: "Create initial tables"
+      
+  history: []                 # Populated by migration runner
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION CONFIG
+# For dry-run and testing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+simulation:
+  
+  enabled: true
+  
+  modes:
+    - name: "in_memory"
+      description: "SQLite in-memory for fast testing"
+      database: "sqlite::memory:"
+      
+    - name: "docker"
+      description: "Ephemeral Postgres container"
+      database: "postgresql://test:test@localhost:5433/test"
+      
+  validation:
+    check_relationships: true
+    check_constraints: true
+    check_indexes: true
+    
+  dry_run:
+    output_sql: true
+    output_orm: true
+    validate_only: false

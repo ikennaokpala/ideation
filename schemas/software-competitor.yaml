@@ -1,0 +1,321 @@
+# SOFTWARE COMPETITOR ANALYSIS SCHEMA
+# Technical and UX analysis of competitor software
+#
+# Purpose: Understand competitor product capabilities, architecture,
+# UX patterns, and feature gaps to inform your own design.
+
+$schema: "https://sparc-dsl.dev/schemas/software-competitor.yaml.json"
+version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+meta:
+  product_name: ""
+  company: ""
+  website: ""
+  analysis_date: ""
+  analyst: "sparc-v6"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRODUCT OVERVIEW
+# ═══════════════════════════════════════════════════════════════════════════════
+
+product_overview:
+  
+  type: ""                    # web-app | mobile-app | desktop | api-first | hybrid
+  
+  platforms:
+    - platform: ""            # web | ios | android | windows | mac | linux
+      quality: ""             # poor | adequate | good | excellent
+      
+  deployment:
+    model: ""                 # cloud-only | self-hosted | hybrid
+    regions: []
+    
+  maturity:
+    level: ""                 # alpha | beta | stable | mature | legacy
+    years_in_market: ""
+    major_version: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TECHNICAL ARCHITECTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+technical_architecture:
+  
+  stack:
+    frontend:
+      framework: ""
+      confidence: ""          # confirmed | likely | speculated
+      evidence: ""
+      
+    backend:
+      language: ""
+      framework: ""
+      confidence: ""
+      
+    database:
+      type: ""
+      technology: ""
+      confidence: ""
+      
+    infrastructure:
+      cloud_provider: ""
+      cdn: ""
+      confidence: ""
+      
+  api:
+    type: ""                  # rest | graphql | grpc | soap
+    documentation:
+      exists: ""
+      quality: ""             # poor | adequate | good | excellent
+      url: ""
+      
+    authentication:
+      methods: []             # api-key | oauth2 | jwt | basic
+      
+    rate_limits:
+      documented: ""
+      limits: []
+      
+    sdk_availability:
+      - language: ""
+        official: ""          # official | community | none
+        quality: ""
+        
+  scalability:
+    architecture: ""          # monolith | microservices | serverless | hybrid
+    estimated_scale: ""
+    performance_reputation: ""
+    
+  reliability:
+    uptime_sla: ""
+    status_page: ""
+    incident_history: ""
+    
+  security:
+    certifications: []        # soc2 | iso27001 | hipaa | gdpr
+    notable_features: []
+    known_issues: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FEATURE INVENTORY
+# Comprehensive feature listing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+feature_inventory:
+  
+  domains:
+    
+    - name: ""                # e.g., "Authentication"
+      description: ""
+      
+      features:
+        - name: ""
+          description: ""
+          
+          maturity: ""        # basic | standard | advanced | best-in-class
+          ux_quality: ""      # poor | adequate | good | excellent
+          
+          capabilities:
+            - capability: ""
+              depth: ""       # shallow | moderate | deep
+              
+          limitations:
+            - limitation: ""
+              severity: ""    # minor | moderate | major
+              
+          # How this feature works (for learning)
+          implementation_notes: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UX ANALYSIS
+# User experience evaluation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ux_analysis:
+  
+  design_system:
+    quality: ""               # poor | adequate | good | excellent
+    consistency: ""
+    accessibility: ""
+    modern: ""                # dated | current | cutting-edge
+    
+  onboarding:
+    type: ""                  # self-serve | guided | assisted | white-glove
+    time_to_value: ""
+    steps_to_first_success: ""
+    
+    flow:
+      - step: ""
+        friction: ""          # none | low | medium | high
+        drop_off_risk: ""
+        
+    friction_points:
+      - point: ""
+        severity: ""
+        
+  navigation:
+    type: ""                  # sidebar | top-nav | command-palette | hybrid
+    information_architecture: ""
+    findability: ""
+    
+  key_workflows:
+    - workflow: ""
+      steps: ""
+      time_to_complete: ""
+      pain_points: []
+      excellence_points: []
+      
+  mobile_experience:
+    responsive: ""
+    native_apps: ""
+    parity_with_web: ""
+    
+  performance:
+    initial_load: ""
+    interaction_speed: ""
+    perceived_speed: ""
+    
+  customization:
+    theming: ""
+    layout: ""
+    workflows: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTEGRATION ECOSYSTEM
+# Connectivity with other tools
+# ═══════════════════════════════════════════════════════════════════════════════
+
+integrations:
+  
+  native_integrations:
+    - name: ""
+      category: ""            # crm | email | payment | analytics | etc.
+      depth: ""               # basic | standard | deep
+      bidirectional: ""
+      
+  integration_platform:
+    zapier: ""                # available | limited | none
+    make: ""
+    native_webhooks: ""
+    
+  api_capabilities:
+    crud_coverage: ""         # What % of features are API-accessible
+    real_time: ""             # webhooks | websockets | polling | none
+    bulk_operations: ""
+    
+  import_export:
+    import_formats: []
+    export_formats: []
+    migration_tools: ""
+    
+  marketplace:
+    exists: ""
+    app_count: ""
+    quality: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COGNITIVE ANALYSIS
+# Deeper product understanding
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cognitive_analysis:
+  
+  adversarial:
+    security_concerns:
+      - concern: ""
+        severity: ""
+        
+    reliability_issues:
+      - issue: ""
+        frequency: ""
+        
+    scalability_limits:
+      - limit: ""
+        threshold: ""
+        
+    technical_debt_signals:
+      - signal: ""
+        implication: ""
+        
+  user_perspective:
+    frustrations:
+      - frustration: ""
+        frequency: ""         # common | occasional | rare
+        severity: ""
+        
+    workarounds_needed:
+      - workaround: ""
+        for_limitation: ""
+        
+    feature_requests:
+      - request: ""
+        votes: ""
+        status: ""
+        
+    praise_points:
+      - point: ""
+        frequency: ""
+        
+  temporal:
+    release_velocity: ""      # rapid | moderate | slow | stagnant
+    recent_improvements: []
+    stagnant_areas: []
+    roadmap_visibility: ""
+    
+  innovation:
+    innovative_features: []
+    following_trends: []
+    missing_trends: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FEATURE GAPS
+# What's missing or poorly done
+# ═══════════════════════════════════════════════════════════════════════════════
+
+feature_gaps:
+  
+  missing_features:
+    - feature: ""
+      impact: ""              # Would solve what problem
+      user_demand: ""         # How much users want this
+      difficulty: ""          # How hard to build
+      
+  incomplete_features:
+    - feature: ""
+      current_state: ""
+      missing_capabilities: []
+      
+  poor_implementations:
+    - feature: ""
+      issues: []
+      how_to_do_better: ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SUMMARY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+summary:
+  
+  strengths:
+    - strength: ""
+      importance: ""
+      
+  weaknesses:
+    - weakness: ""
+      exploitability: ""
+      
+  learn_from:
+    - lesson: ""
+      application: ""
+      
+  differentiate_on:
+    - factor: ""
+      approach: ""
+      
+  avoid:
+    - pattern: ""
+      reason: ""
