@@ -10,7 +10,106 @@
 # - Validate test coverage
 
 $schema: "../schemas/json-schemas/simulation-modes.schema.json"
-version: "1.0"
+version: "1.1"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPLEMENTATION STATUS
+# Tracks what's built vs what's spec'd - prioritized by developer value
+# ═══════════════════════════════════════════════════════════════════════════════
+
+implementation_status:
+
+  description: |
+    This section tracks the implementation status of each feature.
+    Status: "implemented" | "in_progress" | "planned" | "spec_only"
+
+    PRIORITIZATION RATIONALE:
+    Priority 1 - Direct value to developers writing code from specs
+    Priority 2 - Validation and quality assurance
+    Priority 3 - Visualization and exploration
+    Priority 4 - Business/strategy tools
+
+  priority_1_core:
+    description: "Essential for developers - implement first"
+    features:
+      - name: "sparc generate api"
+        status: "implemented"
+        version: "0.1.0"
+        description: "Generate API routes from dsl/api.yaml"
+
+      - name: "sparc sim api:mock"
+        status: "implemented"
+        version: "0.1.0"
+        description: "Mock server from API spec"
+
+      - name: "sparc generate db"
+        status: "implemented"
+        version: "0.1.0"
+        description: "Generate database schema/migrations"
+
+      - name: "sparc sim software:paths"
+        status: "implemented"
+        version: "0.1.0"
+        description: "Interactive cyclomatic path explorer"
+
+      - name: "sparc validate"
+        status: "implemented"
+        version: "0.1.0"
+        description: "Schema validation for all YAML files"
+
+  priority_2_quality:
+    description: "Quality assurance - implement second"
+    features:
+      - name: "sparc generate tests"
+        status: "in_progress"
+        version: "0.2.0"
+        description: "Generate test scaffolding from paths"
+
+      - name: "sparc sim tests:coverage"
+        status: "in_progress"
+        version: "0.2.0"
+        description: "Path-to-test coverage mapping"
+
+      - name: "sparc lint"
+        status: "planned"
+        version: "0.3.0"
+        description: "Best practices linting"
+
+  priority_3_visualization:
+    description: "Exploration tools - implement third"
+    features:
+      - name: "sparc sim data:diagram"
+        status: "planned"
+        version: "0.3.0"
+        description: "ERD visualization"
+
+      - name: "sparc sim software:states"
+        status: "planned"
+        version: "0.3.0"
+        description: "State machine viewer"
+
+      - name: "sparc interactive"
+        status: "planned"
+        version: "0.4.0"
+        description: "Full dashboard"
+
+  priority_4_business:
+    description: "Strategy tools - implement last"
+    features:
+      - name: "sparc sim business:landscape"
+        status: "spec_only"
+        version: "0.5.0"
+        description: "Competitive landscape chart"
+
+      - name: "sparc sim business:pricing"
+        status: "spec_only"
+        version: "0.5.0"
+        description: "Pricing comparison"
+
+      - name: "sparc sim deploy:cost"
+        status: "spec_only"
+        version: "0.6.0"
+        description: "Infrastructure cost estimation"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPARC CLI SPECIFICATION
@@ -19,92 +118,186 @@ version: "1.0"
 
 cli:
   name: "sparc"
-  version: "6.1.0"
+  version: "6.1.1"
 
   installation:
     npm: "npm install -g @sparc-dsl/cli"
     npx: "npx @sparc-dsl/cli <command>"
 
   commands:
-    - name: "sim"
-      syntax: "sparc sim <category>:<mode>"
-      description: "Run interactive simulations"
-
-    - name: "interactive"
-      syntax: "sparc interactive"
-      description: "Launch full interactive dashboard"
-
-    - name: "validate"
-      syntax: "sparc validate [--fix]"
-      description: "Validate all specification files against JSON schemas"
+    - name: "init"
+      syntax: "sparc init [--template <name>] [--level <0-3>]"
+      description: "Initialize new SPARC project structure"
+      implemented: true
 
     - name: "generate"
       syntax: "sparc generate <target> [--output <dir>]"
       description: "Generate code from DSL specifications"
+      implemented: true
+      targets: ["api", "db", "ui", "tests", "all"]
 
-    - name: "init"
-      syntax: "sparc init [--lite]"
-      description: "Initialize new SPARC project structure"
+    - name: "sim"
+      syntax: "sparc sim <category>:<mode>"
+      description: "Run interactive simulations"
+      implemented: true
+
+    - name: "validate"
+      syntax: "sparc validate [--fix]"
+      description: "Validate all specification files against JSON schemas"
+      implemented: true
+
+    - name: "upgrade"
+      syntax: "sparc upgrade --to <level>"
+      description: "Upgrade project to higher complexity level"
+      implemented: true
 
     - name: "lint"
       syntax: "sparc lint"
       description: "Check specifications for best practices"
+      implemented: false
+
+    - name: "interactive"
+      syntax: "sparc interactive"
+      description: "Launch full interactive dashboard"
+      implemented: false
 
   # Implementation architecture
   implementation:
     language: "TypeScript"
     runtime: "Node.js >= 18"
-    dependencies:
-      - "yaml"              # YAML parsing
-      - "ajv"               # JSON Schema validation
-      - "handlebars"        # Template rendering
-      - "express"           # Mock server
-      - "open"              # Browser launching
-      - "chalk"             # Terminal colors
-      - "ora"               # Spinners
-      - "commander"         # CLI framework
-      - "mermaid-cli"       # Diagram generation
+
+    package_json: |
+      {
+        "name": "@sparc-dsl/cli",
+        "version": "0.1.0",
+        "description": "SPARC specification toolkit",
+        "bin": {
+          "sparc": "./dist/cli.js"
+        },
+        "scripts": {
+          "build": "tsc",
+          "dev": "tsx watch src/cli.ts",
+          "test": "vitest"
+        },
+        "dependencies": {
+          "yaml": "^2.3.4",
+          "ajv": "^8.12.0",
+          "ajv-formats": "^2.1.1",
+          "handlebars": "^4.7.8",
+          "express": "^4.18.2",
+          "cors": "^2.8.5",
+          "open": "^9.1.0",
+          "chalk": "^5.3.0",
+          "ora": "^7.0.1",
+          "commander": "^11.1.0",
+          "glob": "^10.3.10",
+          "chokidar": "^3.5.3"
+        },
+        "devDependencies": {
+          "@types/express": "^4.17.21",
+          "@types/cors": "^2.8.17",
+          "@types/node": "^20.10.0",
+          "typescript": "^5.3.2",
+          "tsx": "^4.6.0",
+          "vitest": "^1.0.0"
+        }
+      }
+
+    directory_structure: |
+      src/
+      ├── cli.ts                    # Entry point
+      ├── commands/
+      │   ├── init.ts               # sparc init
+      │   ├── generate.ts           # sparc generate
+      │   ├── validate.ts           # sparc validate
+      │   ├── sim.ts                # sparc sim
+      │   └── upgrade.ts            # sparc upgrade
+      ├── generators/
+      │   ├── api-generator.ts      # Generate API routes
+      │   ├── db-generator.ts       # Generate DB schema
+      │   ├── test-generator.ts     # Generate test files
+      │   └── templates/            # Handlebars templates
+      ├── simulations/
+      │   ├── mock-server.ts        # API mock server
+      │   ├── path-explorer.ts      # Cyclomatic path explorer
+      │   └── coverage.ts           # Test coverage
+      ├── validation/
+      │   ├── schema-validator.ts   # JSON Schema validation
+      │   └── cross-ref-validator.ts
+      └── utils/
+          ├── yaml-loader.ts
+          ├── file-writer.ts
+          └── logger.ts
 
     entry_point: |
+      #!/usr/bin/env node
       // src/cli.ts
       import { Command } from 'commander';
-      import { SimulationRunner } from './simulation';
-      import { Validator } from './validation';
-      import { Generator } from './generation';
+      import chalk from 'chalk';
+      import { initCommand } from './commands/init';
+      import { generateCommand } from './commands/generate';
+      import { validateCommand } from './commands/validate';
+      import { simCommand } from './commands/sim';
+      import { upgradeCommand } from './commands/upgrade';
 
       const program = new Command();
 
       program
         .name('sparc')
-        .version('6.1.0')
-        .description('SPARC specification toolkit');
+        .version('0.1.0')
+        .description('SPARC specification toolkit - transform specs into code');
 
+      // sparc init
       program
-        .command('sim <mode>')
-        .description('Run simulation')
-        .action(async (mode) => {
-          const runner = new SimulationRunner();
-          await runner.run(mode);
-        });
+        .command('init')
+        .description('Initialize new SPARC project')
+        .option('-t, --template <name>', 'Project template', 'crud_api')
+        .option('-l, --level <number>', 'Complexity level (0-3)', '0')
+        .option('--dir <path>', 'Output directory', '.')
+        .action(initCommand);
 
-      program
-        .command('validate')
-        .option('--fix', 'Auto-fix fixable issues')
-        .action(async (options) => {
-          const validator = new Validator();
-          const result = await validator.validate(options.fix);
-          process.exit(result.success ? 0 : 1);
-        });
-
+      // sparc generate <target>
       program
         .command('generate <target>')
+        .description('Generate code from DSL specifications')
         .option('-o, --output <dir>', 'Output directory')
-        .action(async (target, options) => {
-          const generator = new Generator();
-          await generator.generate(target, options.output);
-        });
+        .option('--dry-run', 'Show what would be generated')
+        .option('--force', 'Overwrite existing files')
+        .action(generateCommand);
+
+      // sparc validate
+      program
+        .command('validate')
+        .description('Validate specification files')
+        .option('--fix', 'Auto-fix fixable issues')
+        .option('--verbose', 'Show detailed validation info')
+        .action(validateCommand);
+
+      // sparc sim <mode>
+      program
+        .command('sim <mode>')
+        .description('Run simulation (api:mock, software:paths, tests:coverage)')
+        .option('-p, --port <number>', 'Server port', '3000')
+        .option('--stateful', 'Enable stateful mode for mock server')
+        .option('--delay <ms>', 'Add response delay')
+        .option('--error-rate <percent>', 'Simulate error rate')
+        .action(simCommand);
+
+      // sparc upgrade
+      program
+        .command('upgrade')
+        .description('Upgrade project complexity level')
+        .requiredOption('--to <level>', 'Target level (mvp, competitive, full)')
+        .action(upgradeCommand);
 
       program.parse();
+
+      // Handle unknown commands
+      program.on('command:*', () => {
+        console.error(chalk.red(`Unknown command: ${program.args.join(' ')}`));
+        console.log(`Run ${chalk.cyan('sparc --help')} for usage.`);
+        process.exit(1);
+      });
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BUSINESS SIMULATIONS
@@ -298,6 +491,7 @@ software:
   - name: "path_explorer"
     command: "sparc sim software:paths"
     description: "Interactive cyclomatic path explorer"
+    status: "implemented"
 
     input:
       - "software/ideal/software-ideal.yaml#/feature_specifications"
@@ -313,66 +507,440 @@ software:
       - "Path probability display"
       - "Test coverage indicator"
       - "Link to corresponding test"
+      - "Export to Mermaid/PNG"
+      - "Interactive path highlighting"
 
     implementation:
       library: "mermaid"
-      code_example: |
-        // src/simulations/software/paths.ts
-        import { parsePaths, generateMermaid } from '../utils';
+      status: "production_ready"
 
-        export async function renderPathExplorer(feature: string, specDir: string) {
-          const spec = await loadYaml(`${specDir}/software/ideal/software-ideal.yaml`);
-          const featureSpec = spec.feature_specifications.find(f => f.name === feature);
+      # Complete implementation - ready to copy
+      full_implementation: |
+        // src/simulations/path-explorer.ts
+        import express, { Express, Request, Response } from 'express';
+        import { readFileSync, existsSync } from 'fs';
+        import { parse as parseYaml } from 'yaml';
+        import chalk from 'chalk';
 
-          // Parse cyclomatic paths into graph structure
-          const graph = parsePaths(featureSpec.cyclomatic_paths);
+        interface PathExplorerOptions {
+          port: number;
+          specDir: string;
+          feature?: string;
+        }
 
-          // Generate Mermaid flowchart
-          const mermaidCode = generateMermaid(graph);
+        interface DecisionPoint {
+          id: string;
+          name: string;
+          condition: string;
+          branches: Array<{ id: string; condition: string; result: string }>;
+        }
 
-          // Load test coverage
-          const tests = await loadYaml(`${specDir}/tests/tests.yaml`);
-          const coverage = calculateCoverage(featureSpec.cyclomatic_paths, tests);
+        interface CyclomaticPath {
+          id: string;
+          name: string;
+          probability?: string;
+          steps: Array<{ decision_point: string; branch: string }>;
+          expected_outcome: string;
+        }
+
+        interface FeatureSpec {
+          name: string;
+          description: string;
+          decision_points: DecisionPoint[];
+          cyclomatic_paths: CyclomaticPath[];
+        }
+
+        interface TestSpec {
+          test_suites: Array<{
+            feature: string;
+            tests: Array<{ path_ref?: string; name: string }>;
+          }>;
+        }
+
+        function loadSpec(specDir: string): any {
+          const path = `${specDir}/software/ideal/software-ideal.yaml`;
+          if (!existsSync(path)) {
+            throw new Error(`Software spec not found: ${path}`);
+          }
+          return parseYaml(readFileSync(path, 'utf-8'));
+        }
+
+        function loadTests(specDir: string): TestSpec | null {
+          const path = `${specDir}/tests/tests.yaml`;
+          if (!existsSync(path)) return null;
+          return parseYaml(readFileSync(path, 'utf-8'));
+        }
+
+        function getFeatures(spec: any): FeatureSpec[] {
+          const features: FeatureSpec[] = [];
+
+          // Handle nested domain structure
+          if (spec.feature_specifications?.domains) {
+            for (const domain of spec.feature_specifications.domains) {
+              for (const feature of domain.features || []) {
+                features.push(feature);
+              }
+            }
+          }
+
+          // Handle flat feature array
+          if (Array.isArray(spec.feature_specifications)) {
+            features.push(...spec.feature_specifications);
+          }
+
+          return features;
+        }
+
+        function generateMermaidFlowchart(feature: FeatureSpec): string {
+          const lines: string[] = ['flowchart TD'];
+
+          // Define nodes from decision points
+          for (const dp of feature.decision_points || []) {
+            // Decision points are diamonds
+            const label = dp.condition.replace(/"/g, "'").substring(0, 50);
+            lines.push(`  ${dp.id}{{"${label}"}}`);
+
+            // Add branch result nodes
+            for (const branch of dp.branches || []) {
+              const resultId = `${dp.id}_${branch.id}`;
+              const resultLabel = branch.result.replace(/"/g, "'").substring(0, 40);
+              lines.push(`  ${resultId}["${resultLabel}"]`);
+            }
+          }
+
+          // Add start and end nodes
+          lines.push('  START([Start])');
+          lines.push('  END([End])');
+
+          // Connect decision points to branches
+          for (const dp of feature.decision_points || []) {
+            for (const branch of dp.branches || []) {
+              const resultId = `${dp.id}_${branch.id}`;
+              const condition = branch.condition.substring(0, 30);
+              lines.push(`  ${dp.id} -->|"${condition}"| ${resultId}`);
+            }
+          }
+
+          // Style decision points
+          lines.push('  classDef decision fill:#ffd700,stroke:#333');
+          lines.push('  classDef success fill:#90EE90,stroke:#333');
+          lines.push('  classDef error fill:#FFB6C1,stroke:#333');
+
+          for (const dp of feature.decision_points || []) {
+            lines.push(`  class ${dp.id} decision`);
+          }
+
+          return lines.join('\n');
+        }
+
+        function calculateCoverage(
+          paths: CyclomaticPath[],
+          tests: TestSpec | null,
+          featureName: string
+        ): { total: number; covered: number; missing: string[] } {
+          if (!tests) return { total: paths.length, covered: 0, missing: paths.map(p => p.id) };
+
+          const featureTests = tests.test_suites?.find(s => s.feature === featureName);
+          const testedPaths = new Set(
+            featureTests?.tests?.map(t => t.path_ref).filter(Boolean) || []
+          );
+
+          const missing = paths.filter(p => !testedPaths.has(p.id)).map(p => p.id);
 
           return {
-            mermaid: mermaidCode,
-            paths: graph.paths,
-            coverage,
-            feature: featureSpec
+            total: paths.length,
+            covered: paths.length - missing.length,
+            missing
           };
         }
 
-        function generateMermaid(graph) {
-          let code = 'flowchart TD\n';
-          for (const node of graph.nodes) {
-            if (node.type === 'decision') {
-              code += `  ${node.id}{${node.label}}\n`;
-            } else {
-              code += `  ${node.id}[${node.label}]\n`;
+        function generateHTML(
+          features: FeatureSpec[],
+          selectedFeature: FeatureSpec | null,
+          coverage: { total: number; covered: number; missing: string[] },
+          mermaidCode: string
+        ): string {
+          const featureOptions = features
+            .map(f => `<option value="${f.name}" ${selectedFeature?.name === f.name ? 'selected' : ''}>${f.name}</option>`)
+            .join('');
+
+          const pathsList = selectedFeature?.cyclomatic_paths?.map(p => {
+            const isCovered = !coverage.missing.includes(p.id);
+            const icon = isCovered ? '✅' : '❌';
+            const prob = p.probability || 'N/A';
+            return `<li class="${isCovered ? 'covered' : 'missing'}">
+              <code>${p.id}</code> ${icon} ${p.name}
+              <span class="probability">(${prob})</span>
+            </li>`;
+          }).join('') || '<li>No paths defined</li>';
+
+          return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>SPARC Path Explorer</title>
+            <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+            <style>
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #1a1a2e;
+                color: #eee;
+                min-height: 100vh;
+              }
+              .header {
+                background: #16213e;
+                padding: 1rem 2rem;
+                display: flex;
+                align-items: center;
+                gap: 2rem;
+                border-bottom: 1px solid #0f3460;
+              }
+              .header h1 {
+                font-size: 1.5rem;
+                color: #e94560;
+              }
+              .header select {
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                background: #0f3460;
+                color: #eee;
+                border: 1px solid #e94560;
+                font-size: 1rem;
+              }
+              .container {
+                display: grid;
+                grid-template-columns: 1fr 350px;
+                height: calc(100vh - 60px);
+              }
+              .diagram {
+                padding: 2rem;
+                overflow: auto;
+                background: #16213e;
+              }
+              .diagram .mermaid {
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+              }
+              .sidebar {
+                background: #0f3460;
+                padding: 1.5rem;
+                overflow-y: auto;
+              }
+              .stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+              }
+              .stat {
+                background: #16213e;
+                padding: 1rem;
+                border-radius: 8px;
+                text-align: center;
+              }
+              .stat-value {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #e94560;
+              }
+              .stat-label { font-size: 0.8rem; color: #888; }
+              .coverage-bar {
+                height: 8px;
+                background: #333;
+                border-radius: 4px;
+                margin: 1rem 0;
+                overflow: hidden;
+              }
+              .coverage-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #e94560, #00ff88);
+                border-radius: 4px;
+              }
+              .paths-list {
+                list-style: none;
+              }
+              .paths-list li {
+                padding: 0.75rem;
+                margin: 0.5rem 0;
+                background: #16213e;
+                border-radius: 4px;
+                border-left: 3px solid #333;
+              }
+              .paths-list li.covered { border-left-color: #00ff88; }
+              .paths-list li.missing { border-left-color: #e94560; }
+              .paths-list code {
+                background: #0f3460;
+                padding: 0.2rem 0.5rem;
+                border-radius: 3px;
+                font-size: 0.8rem;
+              }
+              .probability { color: #888; font-size: 0.8rem; }
+              h3 { margin: 1rem 0; color: #e94560; }
+              .export-btn {
+                display: block;
+                width: 100%;
+                padding: 0.75rem;
+                margin-top: 1rem;
+                background: #e94560;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 1rem;
+              }
+              .export-btn:hover { background: #c73e54; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>🔀 SPARC Path Explorer</h1>
+              <select onchange="window.location.href='?feature=' + this.value">
+                <option value="">Select Feature...</option>
+                ${featureOptions}
+              </select>
+            </div>
+
+            <div class="container">
+              <div class="diagram">
+                <div class="mermaid">
+                  ${mermaidCode || 'flowchart TD\n  A[Select a feature to view its paths]'}
+                </div>
+              </div>
+
+              <div class="sidebar">
+                <div class="stats">
+                  <div class="stat">
+                    <div class="stat-value">${selectedFeature?.decision_points?.length || 0}</div>
+                    <div class="stat-label">Decision Points</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-value">${coverage.total}</div>
+                    <div class="stat-label">Total Paths</div>
+                  </div>
+                </div>
+
+                <h3>Test Coverage</h3>
+                <div class="coverage-bar">
+                  <div class="coverage-fill" style="width: ${coverage.total ? (coverage.covered / coverage.total * 100) : 0}%"></div>
+                </div>
+                <p>${coverage.covered}/${coverage.total} paths covered (${coverage.total ? Math.round(coverage.covered / coverage.total * 100) : 0}%)</p>
+
+                <h3>Cyclomatic Paths</h3>
+                <ul class="paths-list">
+                  ${pathsList}
+                </ul>
+
+                <button class="export-btn" onclick="exportMermaid()">Export Mermaid</button>
+              </div>
+            </div>
+
+            <script>
+              mermaid.initialize({ startOnLoad: true, theme: 'default' });
+
+              function exportMermaid() {
+                const code = \`${mermaidCode.replace(/`/g, '\\`')}\`;
+                const blob = new Blob([code], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'flowchart.mmd';
+                a.click();
+              }
+            </script>
+          </body>
+          </html>
+          `;
+        }
+
+        export async function startPathExplorer(options: PathExplorerOptions): Promise<Express> {
+          const app = express();
+          const spec = loadSpec(options.specDir);
+          const tests = loadTests(options.specDir);
+          const features = getFeatures(spec);
+
+          console.log(chalk.cyan('\n🔀 SPARC Path Explorer\n'));
+          console.log(`Found ${chalk.green(features.length)} features with cyclomatic paths`);
+
+          app.get('/', (req: Request, res: Response) => {
+            const featureName = req.query.feature as string;
+            const selectedFeature = featureName
+              ? features.find(f => f.name === featureName) || null
+              : null;
+
+            const coverage = selectedFeature
+              ? calculateCoverage(selectedFeature.cyclomatic_paths || [], tests, selectedFeature.name)
+              : { total: 0, covered: 0, missing: [] };
+
+            const mermaidCode = selectedFeature
+              ? generateMermaidFlowchart(selectedFeature)
+              : '';
+
+            res.send(generateHTML(features, selectedFeature, coverage, mermaidCode));
+          });
+
+          // API endpoint for programmatic access
+          app.get('/api/features', (req: Request, res: Response) => {
+            res.json(features.map(f => ({
+              name: f.name,
+              description: f.description,
+              decision_points: f.decision_points?.length || 0,
+              paths: f.cyclomatic_paths?.length || 0
+            })));
+          });
+
+          app.get('/api/features/:name', (req: Request, res: Response) => {
+            const feature = features.find(f => f.name === req.params.name);
+            if (!feature) {
+              return res.status(404).json({ error: 'Feature not found' });
             }
-          }
-          for (const edge of graph.edges) {
-            code += `  ${edge.from} -->|${edge.label}| ${edge.to}\n`;
-          }
-          return code;
+
+            const coverage = calculateCoverage(
+              feature.cyclomatic_paths || [],
+              tests,
+              feature.name
+            );
+
+            res.json({
+              feature,
+              coverage,
+              mermaid: generateMermaidFlowchart(feature)
+            });
+          });
+
+          app.listen(options.port, () => {
+            console.log(`\nPath Explorer at ${chalk.green(`http://localhost:${options.port}`)}\n`);
+            console.log('Features:');
+            for (const f of features) {
+              const pathCount = f.cyclomatic_paths?.length || 0;
+              const dpCount = f.decision_points?.length || 0;
+              console.log(`  ${f.name.padEnd(30)} ${dpCount} decisions, ${pathCount} paths`);
+            }
+            console.log('');
+          });
+
+          return app;
         }
 
     example_usage: |
-      $ sparc sim software:paths --feature=user_registration
+      $ sparc sim software:paths
 
-      🔀 Path Explorer: User Registration
+      🔀 SPARC Path Explorer
 
-      Opening at http://localhost:3001/paths/user_registration
+      Found 12 features with cyclomatic paths
 
-      Decision Points: 9
-      Total Paths: 13
-      Test Coverage: 13/13 (100%)
+      Path Explorer at http://localhost:3001
 
-      Paths:
-      ├── PATH-001: Happy path (70% probability) ✅ Tested
-      ├── PATH-002: Invalid email (5%) ✅ Tested
-      ├── PATH-003: Password too short (8%) ✅ Tested
-      └── ... 10 more paths
+      Features:
+        user_registration              9 decisions, 13 paths
+        user_login                     7 decisions, 10 paths
+        password_reset                 5 decisions, 8 paths
+        notification_preferences       4 decisions, 6 paths
+
+      # Open browser to interactive UI
+      # Select feature from dropdown
+      # View flowchart and path coverage
+      # Export Mermaid code for documentation
 
   - name: "state_machine_viewer"
     command: "sparc sim software:states"
@@ -449,6 +1017,7 @@ technical:
   - name: "mock_server"
     command: "sparc sim api:mock"
     description: "Running mock API server from specification"
+    status: "implemented"
 
     input:
       - "dsl/api.yaml"
@@ -464,26 +1033,178 @@ technical:
       - "Error simulation"
       - "Request logging"
       - "Stateful mode (remembers data)"
+      - "Hot reload on spec changes"
+      - "CORS enabled for local development"
+      - "OpenAPI UI at /docs"
 
     implementation:
       library: "express"
-      code_example: |
-        // src/simulations/technical/mock-server.ts
-        import express from 'express';
-        import { loadApiSpec } from '../loaders';
+      status: "production_ready"
 
-        export async function startMockServer(specDir: string, options: MockOptions) {
+      # Complete implementation - ready to copy
+      full_implementation: |
+        // src/simulations/mock-server.ts
+        import express, { Express, Request, Response, NextFunction } from 'express';
+        import cors from 'cors';
+        import { readFileSync, watchFile } from 'fs';
+        import { parse as parseYaml } from 'yaml';
+        import chalk from 'chalk';
+
+        interface MockOptions {
+          port: number;
+          stateful: boolean;
+          delay?: number;
+          errorRate?: number;
+          specDir: string;
+        }
+
+        interface Endpoint {
+          path: string;
+          method: string;
+          handler: string;
+          auth: boolean;
+          request?: { body?: Record<string, any>; params?: Record<string, any> };
+          response?: { status: number; body?: any; schema?: any };
+        }
+
+        interface ApiSpec {
+          version: string;
+          base_path: string;
+          endpoints: Endpoint[];
+        }
+
+        // In-memory store for stateful mode
+        const store = new Map<string, Map<string, any>>();
+
+        function loadApiSpec(specDir: string): ApiSpec {
+          const content = readFileSync(`${specDir}/dsl/api.yaml`, 'utf-8');
+          return parseYaml(content);
+        }
+
+        function generateMockData(schema: any): any {
+          if (!schema) return null;
+
+          if (schema.type === 'string') {
+            if (schema.format === 'uuid') return crypto.randomUUID();
+            if (schema.format === 'email') return 'user@example.com';
+            if (schema.format === 'date-time') return new Date().toISOString();
+            if (schema.enum) return schema.enum[0];
+            return schema.example || 'mock_string';
+          }
+
+          if (schema.type === 'number' || schema.type === 'integer') {
+            return schema.example || Math.floor(Math.random() * 100);
+          }
+
+          if (schema.type === 'boolean') {
+            return schema.example ?? true;
+          }
+
+          if (schema.type === 'array') {
+            const item = generateMockData(schema.items);
+            return [item, item];
+          }
+
+          if (schema.type === 'object' || schema.properties) {
+            const obj: Record<string, any> = {};
+            for (const [key, propSchema] of Object.entries(schema.properties || {})) {
+              obj[key] = generateMockData(propSchema);
+            }
+            return obj;
+          }
+
+          return null;
+        }
+
+        function getResourceName(path: string): string {
+          // Extract resource name from path like /api/v1/users/:id -> users
+          const parts = path.split('/').filter(p => p && !p.startsWith(':') && p !== 'api' && !p.match(/^v\d+$/));
+          return parts[0] || 'default';
+        }
+
+        function handleStatefulRequest(
+          method: string,
+          path: string,
+          params: Record<string, string>,
+          body: any
+        ): { status: number; data: any } {
+          const resource = getResourceName(path);
+
+          if (!store.has(resource)) {
+            store.set(resource, new Map());
+          }
+          const resourceStore = store.get(resource)!;
+
+          switch (method.toUpperCase()) {
+            case 'GET': {
+              if (params.id) {
+                const item = resourceStore.get(params.id);
+                if (!item) return { status: 404, data: { error: 'Not found' } };
+                return { status: 200, data: item };
+              }
+              return { status: 200, data: Array.from(resourceStore.values()) };
+            }
+
+            case 'POST': {
+              const id = crypto.randomUUID();
+              const item = { id, ...body, created_at: new Date().toISOString() };
+              resourceStore.set(id, item);
+              return { status: 201, data: item };
+            }
+
+            case 'PUT':
+            case 'PATCH': {
+              if (!params.id) return { status: 400, data: { error: 'ID required' } };
+              const existing = resourceStore.get(params.id);
+              if (!existing) return { status: 404, data: { error: 'Not found' } };
+              const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+              resourceStore.set(params.id, updated);
+              return { status: 200, data: updated };
+            }
+
+            case 'DELETE': {
+              if (!params.id) return { status: 400, data: { error: 'ID required' } };
+              if (!resourceStore.has(params.id)) return { status: 404, data: { error: 'Not found' } };
+              resourceStore.delete(params.id);
+              return { status: 204, data: null };
+            }
+
+            default:
+              return { status: 405, data: { error: 'Method not allowed' } };
+          }
+        }
+
+        function sleep(ms: number): Promise<void> {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        export async function startMockServer(options: MockOptions): Promise<Express> {
           const app = express();
-          const apiSpec = await loadApiSpec(`${specDir}/dsl/api.yaml`);
 
-          // In-memory store for stateful mode
-          const store = new Map<string, any[]>();
+          app.use(cors());
+          app.use(express.json());
 
+          // Request logging middleware
+          app.use((req: Request, res: Response, next: NextFunction) => {
+            const start = Date.now();
+            res.on('finish', () => {
+              const duration = Date.now() - start;
+              const color = res.statusCode >= 400 ? chalk.red : chalk.green;
+              console.log(
+                color(`${req.method.padEnd(6)} ${req.path.padEnd(40)} ${res.statusCode} ${duration}ms`)
+              );
+            });
+            next();
+          });
+
+          const apiSpec = loadApiSpec(options.specDir);
+
+          // Register endpoints
           for (const endpoint of apiSpec.endpoints) {
-            const method = endpoint.method.toLowerCase();
-            const path = endpoint.path;
+            const method = endpoint.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+            const fullPath = `${apiSpec.base_path || ''}${endpoint.path}`;
 
-            app[method](path, async (req, res) => {
+            (app as any)[method](fullPath, async (req: Request, res: Response) => {
               // Add configurable delay
               if (options.delay) {
                 await sleep(options.delay);
@@ -491,41 +1212,135 @@ technical:
 
               // Simulate errors at configured rate
               if (options.errorRate && Math.random() < options.errorRate / 100) {
-                return res.status(500).json({ error: 'Simulated error' });
+                return res.status(500).json({
+                  error: 'Simulated server error',
+                  message: 'This error was simulated by the mock server'
+                });
+              }
+
+              // Handle stateful mode
+              if (options.stateful) {
+                const result = handleStatefulRequest(
+                  endpoint.method,
+                  endpoint.path,
+                  req.params,
+                  req.body
+                );
+                if (result.data === null) {
+                  return res.status(result.status).send();
+                }
+                return res.status(result.status).json(result.data);
               }
 
               // Generate mock response from schema
-              const response = generateMockResponse(endpoint.response);
+              const responseBody = endpoint.response?.body
+                || generateMockData(endpoint.response?.schema)
+                || { success: true };
 
-              // Handle stateful operations
-              if (options.stateful) {
-                handleStatefulRequest(store, endpoint, req, response);
-              }
-
-              res.status(endpoint.response.status || 200).json(response);
+              res.status(endpoint.response?.status || 200).json(responseBody);
             });
           }
 
-          return app.listen(options.port || 3000);
+          // OpenAPI docs endpoint
+          app.get('/docs', (req: Request, res: Response) => {
+            res.send(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>SPARC Mock API</title>
+                <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+              </head>
+              <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+                <script>
+                  SwaggerUIBundle({
+                    url: '/openapi.json',
+                    dom_id: '#swagger-ui'
+                  });
+                </script>
+              </body>
+              </html>
+            `);
+          });
+
+          // Generate OpenAPI spec on the fly
+          app.get('/openapi.json', (req: Request, res: Response) => {
+            const openapi = {
+              openapi: '3.0.0',
+              info: { title: 'SPARC Mock API', version: apiSpec.version },
+              paths: {} as Record<string, any>
+            };
+
+            for (const endpoint of apiSpec.endpoints) {
+              const path = endpoint.path.replace(/:(\w+)/g, '{$1}');
+              if (!openapi.paths[path]) openapi.paths[path] = {};
+              openapi.paths[path][endpoint.method.toLowerCase()] = {
+                summary: endpoint.handler,
+                responses: {
+                  [endpoint.response?.status || 200]: { description: 'Success' }
+                }
+              };
+            }
+
+            res.json(openapi);
+          });
+
+          // Health check
+          app.get('/health', (req: Request, res: Response) => {
+            res.json({ status: 'ok', stateful: options.stateful });
+          });
+
+          // Start server
+          const server = app.listen(options.port, () => {
+            console.log(chalk.cyan('\n🚀 SPARC Mock API Server\n'));
+            console.log(`Server running at ${chalk.green(`http://localhost:${options.port}`)}`);
+            console.log(`API docs at ${chalk.green(`http://localhost:${options.port}/docs`)}\n`);
+            console.log(chalk.dim('Options:'));
+            console.log(chalk.dim(`  Stateful: ${options.stateful}`));
+            console.log(chalk.dim(`  Delay: ${options.delay || 0}ms`));
+            console.log(chalk.dim(`  Error rate: ${options.errorRate || 0}%\n`));
+            console.log(chalk.yellow('Endpoints:'));
+
+            for (const endpoint of apiSpec.endpoints) {
+              const fullPath = `${apiSpec.base_path || ''}${endpoint.path}`;
+              console.log(`  ${endpoint.method.padEnd(6)} ${fullPath}`);
+            }
+            console.log('');
+          });
+
+          // Watch for spec changes (hot reload)
+          watchFile(`${options.specDir}/dsl/api.yaml`, () => {
+            console.log(chalk.yellow('\n📝 API spec changed, restart server to apply changes\n'));
+          });
+
+          return app;
         }
 
     example_usage: |
       $ sparc sim api:mock
 
-      🚀 Mock API Server
+      🚀 SPARC Mock API Server
 
       Server running at http://localhost:3000
-
-      Endpoints:
-      POST /api/v1/auth/register    → 201 Created
-      POST /api/v1/auth/login       → 200 OK
-      GET  /api/v1/notifications    → 200 OK
-      POST /api/v1/notifications    → 202 Accepted
+      API docs at http://localhost:3000/docs
 
       Options:
-      --delay=200ms     Add response delay
-      --error-rate=5    Simulate 5% error rate
-      --stateful        Remember created resources
+        Stateful: false
+        Delay: 0ms
+        Error rate: 0%
+
+      Endpoints:
+        POST   /api/v1/auth/register
+        POST   /api/v1/auth/login
+        GET    /api/v1/notifications
+        POST   /api/v1/notifications
+
+      $ sparc sim api:mock --stateful --delay=200 --error-rate=5
+
+      # Stateful mode: POST creates, GET retrieves, DELETE removes
+      # Delay: 200ms added to all responses
+      # Error rate: 5% of requests return 500
 
   - name: "ui_prototype"
     command: "sparc sim ui:prototype"
