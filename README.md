@@ -1,38 +1,62 @@
-# SPARC v6.1 — Unified Analysis → Simulation → Executable DSL Framework
+# SPARC v6.1.1 — Unified Analysis → Simulation → Executable DSL Framework
 
-> **Philosophy:** Analysis informs specification, specification becomes code.  
-> **Architecture:** Platform-aware, white-label ready, change-friendly.  
-> **Authentication:** Passwordless only (OTP + Social Login).
+> **Philosophy:** Analysis informs specification, specification becomes code.
+> **Architecture:** Platform-aware, white-label ready, change-friendly.
+> **Authentication:** Passwordless only (OTP via MailChannels/Twilio + Social Login). No passwords.
+
+---
+
+## Implementation Status
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| `sparc generate api` | ✅ Implemented | P1 | Generate API routes from dsl/api.yaml |
+| `sparc sim api:mock` | ✅ Implemented | P1 | Mock server from API spec |
+| `sparc generate db` | ✅ Implemented | P1 | Generate database schema/migrations |
+| `sparc sim software:paths` | ✅ Implemented | P1 | Interactive cyclomatic path explorer |
+| `sparc validate` | ✅ Implemented | P1 | Schema validation for all YAML files |
+| `sparc init` | ✅ Implemented | P1 | Initialize project with templates |
+| `sparc upgrade` | ✅ Implemented | P1 | Upgrade project complexity level |
+| `sparc generate tests` | 🔄 In Progress | P2 | Generate test scaffolding from paths |
+| `sparc sim tests:coverage` | 🔄 In Progress | P2 | Path-to-test coverage mapping |
+| `sparc lint` | 📋 Planned | P3 | Best practices linting |
+| `sparc sim data:diagram` | 📋 Planned | P3 | ERD visualization |
+| `sparc sim software:states` | 📋 Planned | P3 | State machine viewer |
+| `sparc interactive` | 📋 Planned | P4 | Full dashboard |
+| `sparc sim business:landscape` | 📝 Spec Only | P4 | Competitive landscape chart |
+| `sparc sim deploy:cost` | 📝 Spec Only | P4 | Infrastructure cost estimation |
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [What SPARC v6.1 Generates](#what-sparc-v61-generates)
-3. [Key Principles](#key-principles)
-4. [Quick Start](#quick-start)
-5. [Input Formats](#input-formats)
-6. [Architecture Decision: Platform vs Single SaaS](#architecture-decision-platform-vs-single-saas)
-7. [The Analysis Pipeline](#the-analysis-pipeline)
+2. [What's New in v6.1.1](#whats-new-in-v611)
+3. [What SPARC v6.1 Generates](#what-sparc-v61-generates)
+4. [Key Principles](#key-principles)
+5. [Quick Start](#quick-start)
+6. [Progressive Complexity Mode](#progressive-complexity-mode)
+7. [Input Formats](#input-formats)
+8. [Architecture Decision: Platform vs Single SaaS](#architecture-decision-platform-vs-single-saas)
+9. [The Analysis Pipeline](#the-analysis-pipeline)
    - [Phase 1: Business Competitor Analysis](#phase-1-business-competitor-analysis)
    - [Phase 2: Business Ideal Synthesis](#phase-2-business-ideal-synthesis)
    - [Phase 3: Software Competitor Analysis](#phase-3-software-competitor-analysis)
    - [Phase 4: Software Ideal Specification](#phase-4-software-ideal-specification)
-8. [Cyclomatic Path Coverage](#cyclomatic-path-coverage)
-9. [Executable DSL Family](#executable-dsl-family)
-10. [Testing Philosophy](#testing-philosophy)
-11. [Authentication Architecture](#authentication-architecture)
-12. [Platform Architecture](#platform-architecture)
-13. [White-Label Support](#white-label-support)
-14. [Simulation Modes](#simulation-modes)
-15. [Directory Structure](#directory-structure)
-16. [Schema Reference](#schema-reference)
-17. [Code Generation](#code-generation)
-18. [Validation Checklist](#validation-checklist)
-19. [Examples](#examples)
-20. [FAQ](#faq)
-21. [Changelog](#changelog)
+10. [Cyclomatic Path Coverage](#cyclomatic-path-coverage)
+11. [Executable DSL Family](#executable-dsl-family)
+12. [Testing Philosophy](#testing-philosophy)
+13. [Authentication Architecture](#authentication-architecture)
+14. [Platform Architecture](#platform-architecture)
+15. [White-Label Support](#white-label-support)
+16. [Simulation Modes](#simulation-modes)
+17. [Directory Structure](#directory-structure)
+18. [Schema Reference](#schema-reference)
+19. [Code Generation](#code-generation)
+20. [Validation Checklist](#validation-checklist)
+21. [Examples](#examples)
+22. [FAQ](#faq)
+23. [Changelog](#changelog)
 
 ---
 
@@ -70,6 +94,59 @@ Idea → Business Analysis → Software Analysis → Exhaustive Specification �
 | **White-Label Ready** | Every service can be deployed standalone for clients |
 | **Exhaustive Paths** | Every cyclomatic path documented and tested |
 | **Separate Repos** | Each bounded context becomes its own Git repository |
+
+---
+
+## What's New in v6.1.1
+
+### Progressive Complexity Mode
+No more "all or nothing" analysis. Start with a minimal spec and add depth incrementally:
+
+| Level | Name | What You Need | What You Get |
+|-------|------|---------------|--------------|
+| 0 | Quick Start | `spec/quick-start.yaml` | Basic code generation, simple mock server |
+| 1 | MVP Spec | `dsl/*.yaml` + `software-ideal.yaml` | Full code gen, cyclomatic tests, DB migrations |
+| 2 | Competitive | Level 1 + 3 competitors analyzed | Feature gap analysis, pricing comparison |
+| 3 | Full | 5-8 competitors + all DSLs | Everything: all simulations, platform architecture |
+
+**Start fast, add depth later:**
+```bash
+sparc init --template crud_api --level 0    # 30 minutes to working spec
+sparc upgrade --to mvp                       # When ready for more detail
+sparc upgrade --to competitive               # When planning strategy
+```
+
+### Passwordless Authentication Providers
+Authentication uses OTP (email/SMS) + Social Login only — no passwords by design:
+
+| Channel | Provider | Configuration |
+|---------|----------|---------------|
+| Email OTP | MailChannels | Via Cloudflare Workers with DKIM support |
+| SMS OTP | Twilio | Via Twilio Verify API for better deliverability |
+| Social | Google, Apple, GitHub, Microsoft | OAuth 2.0 with PKCE |
+
+This eliminates password-related security risks (breaches, phishing, credential stuffing) and simplifies UX (no password reset flows).
+
+### Production-Ready Simulations
+Mock server and path explorer now have complete implementations:
+
+```bash
+# Start a stateful mock API server with OpenAPI docs
+sparc sim api:mock --stateful --port 3000
+# → http://localhost:3000/docs for Swagger UI
+
+# Explore all cyclomatic paths with coverage tracking
+sparc sim software:paths
+# → Interactive flowchart with test coverage indicators
+```
+
+### Quality Over Quantity for Competitor Analysis
+You can now analyze 3 competitors instead of 5-8 if they include:
+- Market leader (dominant player)
+- Direct competitor (most similar to you)
+- Adjacent player (different approach to same problem)
+
+Deep analysis of 3 competitors beats superficial analysis of 8.
 
 ---
 
@@ -218,6 +295,79 @@ sparc sim software:paths        # Explore all paths
 sparc sim api:mock              # Run mock API server
 sparc sim tests:coverage        # Check test coverage
 ```
+
+---
+
+## Progressive Complexity Mode
+
+SPARC v6.1.1 introduces progressive complexity to prevent scope creep and abandonment. Instead of requiring full competitor analysis upfront, you can start minimal and add depth incrementally.
+
+### The Problem with Full Analysis Upfront
+
+The full SPARC pipeline (5-8 competitor analyses × business + software) is massive. Teams often:
+- Abandon partway through due to overwhelming scope
+- Generate superficial "checkbox" analyses to complete faster
+- Never reach code generation because specification takes too long
+
+### The Solution: Progressive Levels
+
+| Level | Name | Required Files | Unlocks |
+|-------|------|----------------|---------|
+| **0** | `quick_start` | `spec/quick-start.yaml` | Basic code gen, simple mock server, happy path tests |
+| **1** | `mvp_spec` | `dsl/*.yaml` + `software-ideal.yaml` | Full code gen, stateful mock, cyclomatic tests, DB migrations |
+| **2** | `competitive_aware` | Level 1 + `top-3.yaml` competitors | Competitive landscape sim, feature gaps, pricing comparison |
+| **3** | `full_analysis` | 5-8 competitors + platform architecture | All simulations, infrastructure cost estimation |
+
+### Quick Start Templates
+
+Get started in 30 minutes with pre-built templates:
+
+```bash
+# Simple REST API
+sparc init --template crud_api
+# → spec/quick-start.yaml, dsl/data.yaml, dsl/api.yaml
+
+# API with authentication
+sparc init --template auth_api
+# → Adds dsl/auth.yaml with OTP + Social
+
+# Multi-tenant SaaS
+sparc init --template saas_starter
+# → All DSLs + basic software-ideal.yaml
+
+# Multi-service platform
+sparc init --template platform_starter
+# → Platform architecture + all DSLs
+```
+
+### Upgrading Between Levels
+
+As your project matures, upgrade to add more depth:
+
+```bash
+# Start with quick spec
+sparc init --template crud_api --level 0
+
+# Add full DSL specs when ready for production
+sparc upgrade --to mvp
+
+# Add competitor analysis when planning strategy
+sparc upgrade --to competitive
+
+# Full analysis for enterprise/fundraising
+sparc upgrade --to full
+```
+
+### Quality Over Quantity
+
+For competitor analysis, depth beats breadth:
+
+**Minimum viable competitor set (3):**
+1. **Market leader** — The dominant player everyone knows
+2. **Direct competitor** — Most similar to your product
+3. **Adjacent player** — Different approach to same problem
+
+This is sufficient for Level 2. Full analysis (5-8 competitors) unlocks more patterns but isn't required.
 
 ---
 
@@ -828,7 +978,7 @@ All tests are API-level integration tests. Tests make real HTTP requests through
 
 **Allowed to mock:**
 - OAuth providers (Google, Apple, GitHub)
-- Email providers (SendGrid, Postmark)
+- Email providers (MailChannels)
 - SMS providers (Twilio)
 - Payment providers (Stripe)
 - Any third-party API
@@ -906,24 +1056,31 @@ test_suites:
 
 ## Authentication Architecture
 
-### Passwordless Only
+### Passwordless Only — By Design
 
-SPARC v6.1 mandates passwordless authentication:
+SPARC v6.1.1 enforces passwordless authentication exclusively:
 
-| Method | Description |
-|--------|-------------|
-| **Email OTP** | 6-digit code sent to email, 10 min TTL |
-| **SMS OTP** | 6-digit code sent to phone, 5 min TTL |
-| **Social Login** | Google, Apple, GitHub, Microsoft |
+| Method | Provider | Configuration |
+|--------|----------|---------------|
+| Email OTP | MailChannels | 6-digit codes, 10 min TTL, 3 max attempts |
+| SMS OTP | Twilio Verify | 6-digit codes, 5 min TTL, 3 max attempts |
+| Social OAuth | Google, Apple, GitHub, Microsoft | OAuth 2.0 with PKCE |
 
-**NO PASSWORDS. EVER.**
+### Why Passwordless Only (No Exceptions)
 
-### Why Passwordless?
+1. **Security** — Passwords are the #1 attack vector (credential stuffing, breaches, phishing)
+2. **UX** — No passwords to remember, forget, or reset
+3. **Simplicity** — No password_hash column, no reset flows, no complexity rules
+4. **Modern** — Users expect magic links and social login
 
-1. **Security** — No passwords to breach
-2. **UX** — No passwords to remember
-3. **Simplicity** — No password reset flows
-4. **Modern** — Users expect passwordless
+### This is Not Configurable
+
+Unlike some frameworks that offer password auth as an option, SPARC enforces passwordless:
+- **No `password_hash` column** in the users table
+- **No password auth endpoints** generated
+- **No password reset flows** to build or maintain
+
+If your requirements mandate passwords (legacy migration, regulatory), SPARC is not the right framework for that project.
 
 ### Authentication Flows
 
@@ -1992,12 +2149,13 @@ Unit tests test implementation details. API integration tests verify behavior. W
 
 ### Q: Why no passwords?
 
-Passwords are:
-1. Security liability (breaches, reuse)
-2. UX friction (forgot password flows)
-3. Support burden (reset requests)
+Passwords are the #1 attack vector:
+1. **Security liability** — Credential stuffing, breaches, phishing
+2. **UX friction** — Password reset flows, complexity rules, forgotten passwords
+3. **Support burden** — Reset requests, lockout support tickets
+4. **Database burden** — password_hash columns, argon2id hashing costs
 
-OTP and Social Login are more secure and easier.
+OTP via MailChannels (email) and Twilio (SMS) + Social Login are more secure and easier. This is not configurable — if you need passwords, use a different framework.
 
 ### Q: Why separate repositories for platforms?
 
@@ -2006,13 +2164,27 @@ OTP and Social Login are more secure and easier.
 3. **Technology flexibility** — Different stacks per service
 4. **White-label** — Deploy individual services standalone
 
-### Q: What if I want password auth?
+### Q: What if I need password auth?
 
-Don't. But if you must, don't use SPARC v6.1. Use an older version or modify the auth schema (not recommended).
+SPARC v6.1.1 does **not** support password authentication. This is by design:
+- Passwordless eliminates the #1 attack vector
+- No password_hash column means nothing to breach
+- Better UX means fewer support tickets
+
+If your requirements mandate passwords, SPARC is not the right framework. Consider frameworks that offer password auth with proper security guardrails.
 
 ### Q: How detailed should competitor analysis be?
 
-Very detailed. The more you understand competitors, the better your positioning. SPARC asks for 5-8 competitors because patterns only emerge with multiple data points.
+Deep analysis of 3 competitors beats superficial analysis of 8.
+
+**Minimum viable set (Level 2):**
+1. Market leader
+2. Direct competitor
+3. Adjacent player
+
+**Full analysis (Level 3):** 5-8 competitors for comprehensive patterns.
+
+Use [Progressive Complexity Mode](#progressive-complexity-mode) to start with minimal analysis and add depth later.
 
 ### Q: What's the difference between PATH-* and EDGE-*?
 
@@ -2041,21 +2213,39 @@ SPARC v6.1 is for new projects. For existing code, you can:
 
 ### v6.1.1 (Current)
 
+**Progressive Complexity Mode:**
+- New 4-level progression system (quick_start → mvp → competitive → full)
+- Quick start templates for rapid adoption (`crud_api`, `auth_api`, `saas_starter`, `platform_starter`)
+- `sparc init --template <name> --level <0-3>` for scaffolding
+- `sparc upgrade --to <level>` for incremental depth
+- Quality over quantity: 3 well-analyzed competitors now acceptable at Level 2
+
+**Passwordless Authentication Providers:**
+- Email OTP via MailChannels (Cloudflare Workers integration with DKIM)
+- SMS OTP via Twilio Verify API
+- Social OAuth: Google, Apple, GitHub, Microsoft with PKCE
+- No password auth — by design, not configurable
+
+**Production-Ready Simulations:**
+- Complete mock server implementation with stateful mode, CORS, OpenAPI docs
+- Complete path explorer implementation with Mermaid flowcharts, coverage tracking
+- Implementation status tracking for all features (implemented → in_progress → planned → spec_only)
+- Priority-based roadmap (P1: developer tools first, P4: business tools last)
+
 **Schema Consolidation:**
 - Consolidated `auth.yaml` and `auth-passwordless-dsl.yaml` into single canonical schema
 - Added `_redirect` pattern for deprecated files with migration guidance
 - Added `_meta` sections with code generation targets
 
-**SPARC Lite Mode:**
-- Added automatic complexity detection (lite/standard/enterprise)
-- Created simplified workflow for small projects
-- Added `lite_mode` section in `package.yaml` with skipped phases and simplified files
-- Lite indicators: single user type, <5 entities, no white-label
+**SPARC Lite Mode (Deprecated):**
+- Replaced by Progressive Complexity Mode Level 0
+- Legacy `lite_mode` section retained for backwards compatibility
+- Migration path: `progressive_mode.levels[0]`
 
 **Runtime Validation:**
 - Created JSON Schema files at `schemas/json-schemas/`
 - `package.schema.json` - validates package.yaml
-- `auth.schema.json` - validates auth.yaml (passwordless enforcement)
+- `auth.schema.json` - validates auth.yaml
 - `ui.schema.json` - validates ui.yaml with code generation mapping
 - Added `$schema` references to DSL files
 
