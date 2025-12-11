@@ -1,6 +1,6 @@
 # UI.YAML DSL SCHEMA
 # Executable specification for user interface
-# 
+#
 # Generates:
 # - React/Next.js components
 # - React Native screens
@@ -13,8 +13,212 @@
 # - Component storybook
 # - Responsive breakpoint testing
 
-$schema: "https://sparc-dsl.dev/schemas/ui.yaml.json"
+$schema: "./json-schemas/ui.schema.json"
 version: "1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CODE GENERATION MAPPING
+# How UI DSL elements map to actual code
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_code_generation:
+
+  description: |
+    This section documents how each UI DSL element translates to generated code.
+    The sparc CLI uses these mappings when running `sparc generate ui`.
+
+  # React/Next.js code generation
+  react:
+    component:
+      template: |
+        // Generated from ui.yaml component: {{name}}
+        import React from 'react';
+        import { cn } from '@/lib/utils';
+        {{#if slots}}import { Slot } from '@radix-ui/react-slot';{{/if}}
+
+        {{> props_interface}}
+
+        export const {{name}}: React.FC<{{name}}Props> = ({
+          {{#each props}}{{name}}{{#if default}} = {{default}}{{/if}},{{/each}}
+          {{#if slots}}children,{{/if}}
+          className,
+          ...props
+        }) => {
+          return (
+            {{> component_jsx}}
+          );
+        };
+
+      example_output: |
+        // Generated from ui.yaml component: Button
+        import React from 'react';
+        import { cn } from '@/lib/utils';
+
+        interface ButtonProps {
+          variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+          size?: 'sm' | 'md' | 'lg';
+          disabled?: boolean;
+          loading?: boolean;
+          fullWidth?: boolean;
+          onClick: () => void;
+          children: React.ReactNode;
+          className?: string;
+        }
+
+        export const Button: React.FC<ButtonProps> = ({
+          variant = 'primary',
+          size = 'md',
+          disabled = false,
+          loading = false,
+          fullWidth = false,
+          onClick,
+          children,
+          className,
+          ...props
+        }) => {
+          return (
+            <button
+              className={cn(
+                'inline-flex items-center justify-center font-medium rounded-md transition-colors',
+                'focus:outline-none focus:ring-2 focus:ring-offset-2',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                // Variant styles
+                variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-600',
+                variant === 'secondary' && 'bg-slate-500 text-white hover:bg-slate-600',
+                variant === 'outline' && 'border border-slate-300 bg-transparent hover:bg-slate-100',
+                variant === 'ghost' && 'bg-transparent hover:bg-slate-100',
+                variant === 'danger' && 'bg-red-500 text-white hover:bg-red-600',
+                // Size styles
+                size === 'sm' && 'h-8 px-3 text-sm',
+                size === 'md' && 'h-10 px-4 text-base',
+                size === 'lg' && 'h-12 px-6 text-lg',
+                // Width
+                fullWidth && 'w-full',
+                className
+              )}
+              disabled={disabled || loading}
+              onClick={onClick}
+              {...props}
+            >
+              {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
+              {children}
+            </button>
+          );
+        };
+
+    screen:
+      template: |
+        // Generated from ui.yaml screen: {{name}}
+        'use client';
+
+        import React, { useState, useEffect } from 'react';
+        import { useRouter } from 'next/navigation';
+        {{#each imports}}
+        import { {{this}} } from '@/components';
+        {{/each}}
+
+        {{#if auth.required}}
+        import { withAuth } from '@/lib/auth';
+        {{/if}}
+
+        {{> state_hooks}}
+        {{> data_hooks}}
+
+        export default function {{name}}() {
+          {{> screen_body}}
+        }
+
+        {{#if auth.required}}
+        export default withAuth({{name}}, { roles: {{json auth.roles}} });
+        {{/if}}
+
+    mappings:
+      # DSL element -> React code
+      component.props.type:
+        string: "string"
+        number: "number"
+        boolean: "boolean"
+        enum: "'{{values | join \"' | '\"}}"
+        array: "{{items.type}}[]"
+        object: "Record<string, unknown>"
+        function: "() => void"
+        icon: "React.ReactNode"
+        component: "React.ReactNode"
+
+      component.styles.base: "className={cn('{{base}}')}'"
+      component.styles.variants: "{{name}} === '{{key}}' && '{{value}}'"
+
+      screen.state: "const [{{name}}, set{{name | pascal}}] = useState<{{type}}>({{default | json}});"
+      screen.data: |
+        const { data: {{name}}, isLoading: {{name}}Loading } = useQuery({
+          queryKey: ['{{name}}'],
+          queryFn: () => fetch('{{endpoint_ref}}').then(r => r.json()),
+          {{#if params}}
+          ...{{params | json}},
+          {{/if}}
+        });
+
+  # Vue code generation
+  vue:
+    component:
+      template: |
+        <!-- Generated from ui.yaml component: {{name}} -->
+        <script setup lang="ts">
+        {{#each props}}
+        defineProps<{
+          {{name}}{{#unless required}}?{{/unless}}: {{type}};
+        }>();
+        {{/each}}
+        </script>
+
+        <template>
+          {{> component_template}}
+        </template>
+
+        <style scoped>
+        {{> component_styles}}
+        </style>
+
+  # Storybook story generation
+  storybook:
+    template: |
+      // Generated from ui.yaml component: {{name}}
+      import type { Meta, StoryObj } from '@storybook/react';
+      import { {{name}} } from './{{name | kebab}}';
+
+      const meta: Meta<typeof {{name}}> = {
+        title: 'Components/{{category}}/{{name}}',
+        component: {{name}},
+        tags: ['autodocs'],
+        argTypes: {
+          {{#each props}}
+          {{name}}: {
+            {{#if values}}
+            control: 'select',
+            options: [{{values | map "'" | join "', '"}}],
+            {{else}}
+            control: '{{controlType type}}',
+            {{/if}}
+            description: '{{description}}',
+            {{#if default}}
+            defaultValue: {{default | json}},
+            {{/if}}
+          },
+          {{/each}}
+        },
+      };
+
+      export default meta;
+      type Story = StoryObj<typeof {{name}}>;
+
+      {{#each examples}}
+      export const {{name | pascal}}: Story = {
+        args: {{props | json}},
+        {{#if slot}}
+        render: (args) => <{{../name}} {...args}>{{slot}}</{{../name}}>,
+        {{/if}}
+      };
+      {{/each}}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # METADATA
@@ -24,15 +228,15 @@ meta:
   name: ""
   description: ""
   version: "0.1.0"
-  
+
   target:
     platform: "web"           # web | mobile | desktop | cross-platform
     framework: "react"        # react | vue | svelte | flutter | react-native
-    
+
   styling:
     system: "tailwind"        # tailwind | css-modules | styled-components | native
     theme_ref: "theme.yaml"   # Reference to theme file
-    
+
   conventions:
     component_naming: "PascalCase"
     file_naming: "kebab-case"

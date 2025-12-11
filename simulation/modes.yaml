@@ -9,127 +9,261 @@
 # - Estimate infrastructure costs
 # - Validate test coverage
 
-$schema: "https://sparc-dsl.dev/schemas/simulation-modes.yaml.json"
+$schema: "../schemas/json-schemas/simulation-modes.schema.json"
 version: "1.0"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIMULATION CLI
+# SPARC CLI SPECIFICATION
+# Implementation guide for the sparc command-line tool
 # ═══════════════════════════════════════════════════════════════════════════════
 
 cli:
   name: "sparc"
   version: "6.1.0"
-  
+
+  installation:
+    npm: "npm install -g @sparc-dsl/cli"
+    npx: "npx @sparc-dsl/cli <command>"
+
   commands:
-    - "sparc sim <category>:<mode>"
-    - "sparc interactive"
-    - "sparc validate"
-    - "sparc generate"
+    - name: "sim"
+      syntax: "sparc sim <category>:<mode>"
+      description: "Run interactive simulations"
+
+    - name: "interactive"
+      syntax: "sparc interactive"
+      description: "Launch full interactive dashboard"
+
+    - name: "validate"
+      syntax: "sparc validate [--fix]"
+      description: "Validate all specification files against JSON schemas"
+
+    - name: "generate"
+      syntax: "sparc generate <target> [--output <dir>]"
+      description: "Generate code from DSL specifications"
+
+    - name: "init"
+      syntax: "sparc init [--lite]"
+      description: "Initialize new SPARC project structure"
+
+    - name: "lint"
+      syntax: "sparc lint"
+      description: "Check specifications for best practices"
+
+  # Implementation architecture
+  implementation:
+    language: "TypeScript"
+    runtime: "Node.js >= 18"
+    dependencies:
+      - "yaml"              # YAML parsing
+      - "ajv"               # JSON Schema validation
+      - "handlebars"        # Template rendering
+      - "express"           # Mock server
+      - "open"              # Browser launching
+      - "chalk"             # Terminal colors
+      - "ora"               # Spinners
+      - "commander"         # CLI framework
+      - "mermaid-cli"       # Diagram generation
+
+    entry_point: |
+      // src/cli.ts
+      import { Command } from 'commander';
+      import { SimulationRunner } from './simulation';
+      import { Validator } from './validation';
+      import { Generator } from './generation';
+
+      const program = new Command();
+
+      program
+        .name('sparc')
+        .version('6.1.0')
+        .description('SPARC specification toolkit');
+
+      program
+        .command('sim <mode>')
+        .description('Run simulation')
+        .action(async (mode) => {
+          const runner = new SimulationRunner();
+          await runner.run(mode);
+        });
+
+      program
+        .command('validate')
+        .option('--fix', 'Auto-fix fixable issues')
+        .action(async (options) => {
+          const validator = new Validator();
+          const result = await validator.validate(options.fix);
+          process.exit(result.success ? 0 : 1);
+        });
+
+      program
+        .command('generate <target>')
+        .option('-o, --output <dir>', 'Output directory')
+        .action(async (target, options) => {
+          const generator = new Generator();
+          await generator.generate(target, options.output);
+        });
+
+      program.parse();
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BUSINESS SIMULATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 business:
-  
+
   - name: "competitive_landscape"
     command: "sparc sim business:landscape"
     description: "Visual competitive positioning map"
-    
+
     input:
       - "business/competitors/*.yaml"
       - "business/ideal/business-ideal.yaml"
-      
+
     output:
       type: "interactive_chart"
       format: "html"
-      
+
     features:
       - "2D positioning map (price vs feature completeness)"
       - "Market share bubbles"
       - "Segment filters"
       - "Your projected position highlighted"
       - "Export to PNG/SVG"
-      
+
+    implementation:
+      library: "chart.js"
+      server_port: 3001
+      code_example: |
+        // src/simulations/business/landscape.ts
+        import { Chart } from 'chart.js';
+        import { loadCompetitors } from '../loaders';
+
+        export async function renderLandscape(specDir: string) {
+          const competitors = await loadCompetitors(`${specDir}/business/competitors`);
+          const ideal = await loadYaml(`${specDir}/business/ideal/business-ideal.yaml`);
+
+          const data = competitors.map(c => ({
+            x: c.pricing.average_monthly_cost,
+            y: c.feature_completeness_score,
+            r: c.market_share * 100,
+            label: c.name
+          }));
+
+          // Add projected position
+          data.push({
+            x: ideal.optimal_business_model.pricing_strategy.target_price,
+            y: ideal.competitive_positioning.feature_completeness,
+            r: 10,
+            label: 'Your Product (Projected)',
+            highlighted: true
+          });
+
+          return {
+            type: 'bubble',
+            data: { datasets: [{ data }] },
+            options: {
+              scales: {
+                x: { title: { text: 'Monthly Price ($)' } },
+                y: { title: { text: 'Feature Completeness (%)' } }
+              }
+            }
+          };
+        }
+
     example_usage: |
       $ sparc sim business:landscape
-      
+
       🎯 Competitive Landscape
-      
+
       Opening interactive chart at http://localhost:3001
-      
+
       Competitors plotted:
       - Competitor A: ($99/mo, 85% features) - Leader
       - Competitor B: ($49/mo, 65% features) - Challenger
       - Competitor C: ($199/mo, 95% features) - Enterprise
       - Your position: ($79/mo, 80% features) - Projected
-      
+
   - name: "pricing_comparison"
     command: "sparc sim business:pricing"
     description: "Interactive pricing tier comparison matrix"
-    
+
     input:
       - "business/competitors/*.yaml"
       - "business/ideal/business-ideal.yaml#/optimal_business_model/pricing_strategy"
-      
+
     output:
       type: "interactive_table"
       format: "html"
-      
+
     features:
       - "Side-by-side tier comparison"
       - "Feature matrix with checkmarks"
       - "Price per feature analysis"
       - "Value metric comparison"
       - "Export to CSV/Markdown"
-      
+
+    implementation:
+      library: "ag-grid"
+      code_example: |
+        // Generates comparison table from competitor pricing tiers
+        const tiers = competitors.flatMap(c =>
+          c.pricing.tiers.map(tier => ({
+            competitor: c.name,
+            tier: tier.name,
+            price: tier.price,
+            features: tier.features,
+            limits: tier.limits
+          }))
+        );
+
   - name: "market_sizing"
     command: "sparc sim business:market"
     description: "TAM/SAM/SOM visualization"
-    
+
     input:
       - "business/ideal/business-ideal.yaml#/competitor_synthesis/market_overview"
-      
+
     output:
       type: "funnel_chart"
       format: "html"
-      
+
     features:
       - "TAM/SAM/SOM funnel"
       - "Growth projections"
       - "Segment breakdown"
       - "Source citations"
-      
+
   - name: "gtm_timeline"
     command: "sparc sim business:gtm"
     description: "Go-to-market timeline and milestones"
-    
+
     input:
       - "business/ideal/business-ideal.yaml#/optimal_go_to_market"
       - "business/ideal/business-ideal.yaml#/roadmap"
-      
+
     output:
       type: "gantt_chart"
       format: "html"
-      
+
     features:
       - "Phase timeline visualization"
       - "Milestone markers"
       - "Resource allocation"
       - "Dependencies"
       - "Export to project management tools"
-      
+
   - name: "unit_economics"
     command: "sparc sim business:unit-economics"
     description: "Unit economics calculator and projections"
-    
+
     input:
       - "business/ideal/business-ideal.yaml#/optimal_business_model/target_unit_economics"
-      
+
     output:
       type: "calculator"
       format: "html"
-      
+
     features:
       - "Interactive CAC/LTV calculator"
       - "Payback period visualization"
@@ -141,37 +275,37 @@ business:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 software:
-  
+
   - name: "feature_matrix"
     command: "sparc sim software:features"
     description: "Feature comparison across competitors"
-    
+
     input:
       - "software/competitors/*.yaml"
       - "software/ideal/software-ideal.yaml"
-      
+
     output:
       type: "interactive_table"
       format: "html"
-      
+
     features:
       - "Feature-by-feature comparison"
       - "Maturity level indicators"
       - "Gap analysis highlighting"
       - "Filter by domain/priority"
       - "Export to spreadsheet"
-      
+
   - name: "path_explorer"
     command: "sparc sim software:paths"
     description: "Interactive cyclomatic path explorer"
-    
+
     input:
       - "software/ideal/software-ideal.yaml#/feature_specifications"
-      
+
     output:
       type: "interactive_flowchart"
       format: "html"
-      
+
     features:
       - "Visual flow diagram for each feature"
       - "Click through decision points"
@@ -179,186 +313,387 @@ software:
       - "Path probability display"
       - "Test coverage indicator"
       - "Link to corresponding test"
-      
+
+    implementation:
+      library: "mermaid"
+      code_example: |
+        // src/simulations/software/paths.ts
+        import { parsePaths, generateMermaid } from '../utils';
+
+        export async function renderPathExplorer(feature: string, specDir: string) {
+          const spec = await loadYaml(`${specDir}/software/ideal/software-ideal.yaml`);
+          const featureSpec = spec.feature_specifications.find(f => f.name === feature);
+
+          // Parse cyclomatic paths into graph structure
+          const graph = parsePaths(featureSpec.cyclomatic_paths);
+
+          // Generate Mermaid flowchart
+          const mermaidCode = generateMermaid(graph);
+
+          // Load test coverage
+          const tests = await loadYaml(`${specDir}/tests/tests.yaml`);
+          const coverage = calculateCoverage(featureSpec.cyclomatic_paths, tests);
+
+          return {
+            mermaid: mermaidCode,
+            paths: graph.paths,
+            coverage,
+            feature: featureSpec
+          };
+        }
+
+        function generateMermaid(graph) {
+          let code = 'flowchart TD\n';
+          for (const node of graph.nodes) {
+            if (node.type === 'decision') {
+              code += `  ${node.id}{${node.label}}\n`;
+            } else {
+              code += `  ${node.id}[${node.label}]\n`;
+            }
+          }
+          for (const edge of graph.edges) {
+            code += `  ${edge.from} -->|${edge.label}| ${edge.to}\n`;
+          }
+          return code;
+        }
+
     example_usage: |
       $ sparc sim software:paths --feature=user_registration
-      
+
       🔀 Path Explorer: User Registration
-      
+
       Opening at http://localhost:3001/paths/user_registration
-      
+
       Decision Points: 9
       Total Paths: 13
       Test Coverage: 13/13 (100%)
-      
+
       Paths:
       ├── PATH-001: Happy path (70% probability) ✅ Tested
       ├── PATH-002: Invalid email (5%) ✅ Tested
       ├── PATH-003: Password too short (8%) ✅ Tested
       └── ... 10 more paths
-      
+
   - name: "state_machine_viewer"
     command: "sparc sim software:states"
     description: "Interactive state machine visualization"
-    
+
     input:
       - "software/ideal/software-ideal.yaml#/feature_specifications/*/state_machine"
       - "dsl/logic.yaml#/state_machines"
-      
+
     output:
       type: "state_diagram"
       format: "html"
-      
+
     features:
       - "Visual state diagram"
       - "Click transitions to see guards/actions"
       - "Simulate state transitions"
       - "See allowed actions per state"
       - "Export to XState visualizer"
-      
+
+    implementation:
+      library: "@xstate/inspect"
+      code_example: |
+        // Converts SPARC state machine to XState machine
+        import { createMachine } from 'xstate';
+
+        function convertToXState(sparcMachine) {
+          return createMachine({
+            id: sparcMachine.name,
+            initial: sparcMachine.initial_state,
+            states: Object.fromEntries(
+              sparcMachine.states.map(state => [
+                state.name,
+                {
+                  on: Object.fromEntries(
+                    state.transitions.map(t => [
+                      t.event,
+                      { target: t.to, guard: t.guard }
+                    ])
+                  )
+                }
+              ])
+            )
+          });
+        }
+
   - name: "api_explorer"
     command: "sparc sim software:api"
     description: "Interactive API documentation"
-    
+
     input:
       - "software/ideal/software-ideal.yaml#/feature_specifications/*/api"
       - "dsl/api.yaml"
-      
+
     output:
       type: "swagger_ui"
       format: "html"
-      
+
     features:
       - "OpenAPI/Swagger UI"
       - "Try endpoints (connected to mock server)"
       - "Request/response examples"
       - "Authentication testing"
 
+    implementation:
+      library: "swagger-ui-express"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TECHNICAL SIMULATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 technical:
-  
+
   - name: "mock_server"
     command: "sparc sim api:mock"
     description: "Running mock API server from specification"
-    
+
     input:
       - "dsl/api.yaml"
       - "software/ideal/software-ideal.yaml#/feature_specifications/*/api"
-      
+
     output:
       type: "server"
       port: 3000
-      
+
     features:
       - "Full API mock from spec"
       - "Realistic response delays"
       - "Error simulation"
       - "Request logging"
       - "Stateful mode (remembers data)"
-      
+
+    implementation:
+      library: "express"
+      code_example: |
+        // src/simulations/technical/mock-server.ts
+        import express from 'express';
+        import { loadApiSpec } from '../loaders';
+
+        export async function startMockServer(specDir: string, options: MockOptions) {
+          const app = express();
+          const apiSpec = await loadApiSpec(`${specDir}/dsl/api.yaml`);
+
+          // In-memory store for stateful mode
+          const store = new Map<string, any[]>();
+
+          for (const endpoint of apiSpec.endpoints) {
+            const method = endpoint.method.toLowerCase();
+            const path = endpoint.path;
+
+            app[method](path, async (req, res) => {
+              // Add configurable delay
+              if (options.delay) {
+                await sleep(options.delay);
+              }
+
+              // Simulate errors at configured rate
+              if (options.errorRate && Math.random() < options.errorRate / 100) {
+                return res.status(500).json({ error: 'Simulated error' });
+              }
+
+              // Generate mock response from schema
+              const response = generateMockResponse(endpoint.response);
+
+              // Handle stateful operations
+              if (options.stateful) {
+                handleStatefulRequest(store, endpoint, req, response);
+              }
+
+              res.status(endpoint.response.status || 200).json(response);
+            });
+          }
+
+          return app.listen(options.port || 3000);
+        }
+
     example_usage: |
       $ sparc sim api:mock
-      
+
       🚀 Mock API Server
-      
+
       Server running at http://localhost:3000
-      
+
       Endpoints:
       POST /api/v1/auth/register    → 201 Created
       POST /api/v1/auth/login       → 200 OK
       GET  /api/v1/notifications    → 200 OK
       POST /api/v1/notifications    → 202 Accepted
-      
+
       Options:
       --delay=200ms     Add response delay
       --error-rate=5    Simulate 5% error rate
       --stateful        Remember created resources
-      
+
   - name: "ui_prototype"
     command: "sparc sim ui:prototype"
     description: "Interactive UI prototype from specification"
-    
+
     input:
       - "dsl/ui.yaml"
-      
+
     output:
       type: "storybook"
       port: 6006
-      
+
     features:
       - "Storybook with all components"
       - "Screen previews"
       - "Interactive navigation"
       - "Mobile/tablet/desktop views"
       - "Dark mode toggle"
-      
+
+    implementation:
+      library: "@storybook/react"
+      code_example: |
+        // Generates Storybook stories from ui.yaml
+        function generateStories(uiSpec) {
+          const stories = [];
+
+          for (const component of uiSpec.components) {
+            stories.push({
+              title: `Components/${component.category}/${component.name}`,
+              component: generateComponent(component),
+              args: component.examples[0]?.props || {},
+              argTypes: generateArgTypes(component.props)
+            });
+          }
+
+          for (const screen of uiSpec.screens) {
+            stories.push({
+              title: `Screens/${screen.name}`,
+              component: generateScreen(screen),
+              parameters: {
+                layout: 'fullscreen'
+              }
+            });
+          }
+
+          return stories;
+        }
+
   - name: "database_diagram"
     command: "sparc sim data:diagram"
     description: "Entity relationship diagram"
-    
+
     input:
       - "dsl/data.yaml"
-      
+
     output:
       type: "erd"
       format: "html"
-      
+
     features:
       - "Interactive ERD"
       - "Click entity for details"
       - "Relationship highlighting"
       - "Export to dbdiagram.io"
       - "Generate migration preview"
-      
+
+    implementation:
+      library: "mermaid"
+      code_example: |
+        // Generates Mermaid ERD from data.yaml
+        function generateERD(dataSpec) {
+          let code = 'erDiagram\n';
+
+          for (const entity of dataSpec.entities) {
+            code += `  ${entity.name} {\n`;
+            for (const field of entity.fields) {
+              const pk = field.primary ? ' PK' : '';
+              const fk = field.references ? ' FK' : '';
+              code += `    ${field.type} ${field.name}${pk}${fk}\n`;
+            }
+            code += '  }\n';
+
+            // Add relationships
+            for (const relation of entity.relations || []) {
+              const cardinality = {
+                'one-to-one': '||--||',
+                'one-to-many': '||--o{',
+                'many-to-many': '}o--o{'
+              }[relation.type];
+              code += `  ${entity.name} ${cardinality} ${relation.target} : "${relation.name}"\n`;
+            }
+          }
+
+          return code;
+        }
+
   - name: "architecture_diagram"
     command: "sparc sim deploy:architecture"
     description: "System architecture visualization"
-    
+
     input:
       - "dsl/deploy.yaml"
       - "architecture/platform-architecture.yaml"
-      
+
     output:
       type: "diagram"
       format: "html"
-      
+
     features:
       - "Service topology"
       - "Data flow arrows"
       - "Network boundaries"
       - "Database connections"
       - "Export to draw.io/Mermaid"
-      
+
   - name: "cost_estimation"
     command: "sparc sim deploy:cost"
     description: "Infrastructure cost estimation"
-    
+
     input:
       - "dsl/deploy.yaml"
-      
+
     output:
       type: "calculator"
       format: "html"
-      
+
     features:
       - "Monthly cost breakdown"
       - "Per-service costs"
       - "Scaling projections"
       - "Cost comparison (AWS vs GCP vs Azure)"
       - "Reserved instance savings"
-      
+
+    implementation:
+      code_example: |
+        // Cost calculation from deploy.yaml
+        const PRICING = {
+          aws: {
+            compute: { 't3.micro': 8.35, 't3.small': 16.7, 't3.medium': 33.4 },
+            rds: { 'db.t3.micro': 12.41, 'db.t3.small': 24.82 },
+            elasticache: { 'cache.t3.micro': 12.41 },
+            s3: { perGB: 0.023 },
+            cloudfront: { perGB: 0.085 }
+          }
+        };
+
+        function estimateCosts(deploySpec, cloud = 'aws') {
+          const costs = {};
+          const pricing = PRICING[cloud];
+
+          for (const service of deploySpec.services) {
+            const instanceType = service.resources?.instance_type || 't3.small';
+            const replicas = service.replicas || 1;
+            costs[service.name] = pricing.compute[instanceType] * replicas * 730; // hours/month
+          }
+
+          return costs;
+        }
+
     example_usage: |
       $ sparc sim deploy:cost
-      
+
       💰 Infrastructure Cost Estimation
-      
+
       Environment: Production
       Cloud: AWS
       Region: us-east-1
-      
+
       Monthly Costs:
       ├── Compute (EKS)        $450
       ├── Database (RDS)       $200
@@ -367,7 +702,7 @@ technical:
       ├── CDN (CloudFront)     $75
       ├── Monitoring           $50
       └── Total               $925/month
-      
+
       Scaling to 10x traffic: ~$3,500/month
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -375,55 +710,87 @@ technical:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 platform:
-  
+
   - name: "service_map"
     command: "sparc sim platform:services"
     description: "Service dependency visualization"
-    
+
     input:
       - "architecture/platform-architecture.yaml#/bounded_contexts"
-      
+
     output:
       type: "service_mesh"
       format: "html"
-      
+
     features:
       - "Service boxes with health"
       - "Dependency arrows"
       - "API surface labels"
       - "Database connections"
       - "Click for service details"
-      
+
   - name: "auth_flows"
     command: "sparc sim platform:auth"
     description: "Authentication flow sequence diagrams"
-    
+
     input:
       - "architecture/platform-architecture.yaml#/unified_auth"
       - "dsl/auth.yaml"
-      
+
     output:
       type: "sequence_diagram"
       format: "html"
-      
+
     features:
       - "Login flow"
       - "OAuth flows (per provider)"
       - "Token refresh flow"
       - "Service-to-service auth"
       - "Export to Mermaid"
-      
+
+    implementation:
+      library: "mermaid"
+      code_example: |
+        // Generate OTP login sequence diagram
+        function generateOTPSequence() {
+          return `
+            sequenceDiagram
+              participant U as User
+              participant C as Client App
+              participant A as Auth Service
+              participant E as Email Provider
+              participant D as Database
+
+              U->>C: Enter email
+              C->>A: POST /auth/otp/request
+              A->>D: Check if user exists
+              A->>A: Generate OTP code
+              A->>D: Store hashed OTP
+              A->>E: Send OTP email
+              E-->>U: Email with code
+              A-->>C: 200 OK (OTP sent)
+
+              U->>C: Enter OTP code
+              C->>A: POST /auth/otp/verify
+              A->>D: Verify OTP hash
+              A->>A: Generate JWT tokens
+              A->>D: Store refresh token
+              A-->>C: 200 OK (tokens)
+              C->>C: Store tokens
+          `;
+        }
+
   - name: "event_flow"
     command: "sparc sim platform:events"
     description: "Event bus message flow visualization"
-    
+
     input:
       - "architecture/platform-architecture.yaml#/cross_cutting/event_bus"
-      
+
     output:
       type: "flow_diagram"
       format: "html"
-      
+
     features:
       - "Publishers and subscribers"
       - "Event type catalog"
@@ -435,72 +802,121 @@ platform:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 testing:
-  
+
   - name: "coverage_report"
     command: "sparc sim tests:coverage"
     description: "Path-to-test coverage mapping"
-    
+
     input:
       - "software/ideal/software-ideal.yaml#/feature_specifications/*/paths"
       - "tests/tests.yaml"
-      
+
     output:
       type: "coverage_report"
       format: "html"
-      
+
     features:
       - "Path → Test mapping"
       - "Missing test highlighting"
       - "Edge case coverage"
       - "Boundary coverage"
       - "Export to Markdown"
-      
+
+    implementation:
+      code_example: |
+        // src/simulations/testing/coverage.ts
+        interface CoverageResult {
+          feature: string;
+          totalPaths: number;
+          coveredPaths: number;
+          missingPaths: string[];
+          edgeCases: { total: number; covered: number };
+          boundaries: { total: number; covered: number };
+        }
+
+        async function calculateCoverage(specDir: string): Promise<CoverageResult[]> {
+          const softwareSpec = await loadYaml(`${specDir}/software/ideal/software-ideal.yaml`);
+          const testsSpec = await loadYaml(`${specDir}/tests/tests.yaml`);
+
+          const results: CoverageResult[] = [];
+
+          for (const feature of softwareSpec.feature_specifications) {
+            const paths = feature.cyclomatic_paths || [];
+            const edges = feature.edge_cases || [];
+            const boundaries = feature.boundary_conditions || [];
+
+            const featureTests = testsSpec.test_suites
+              .find(s => s.feature === feature.name)?.tests || [];
+
+            const coveredPathIds = new Set(
+              featureTests.map(t => t.path_ref).filter(Boolean)
+            );
+
+            results.push({
+              feature: feature.name,
+              totalPaths: paths.length,
+              coveredPaths: paths.filter(p => coveredPathIds.has(p.id)).length,
+              missingPaths: paths.filter(p => !coveredPathIds.has(p.id)).map(p => p.id),
+              edgeCases: {
+                total: edges.length,
+                covered: edges.filter(e => coveredPathIds.has(e.id)).length
+              },
+              boundaries: {
+                total: boundaries.length,
+                covered: boundaries.filter(b => coveredPathIds.has(b.id)).length
+              }
+            });
+          }
+
+          return results;
+        }
+
     example_usage: |
       $ sparc sim tests:coverage
-      
+
       📊 Cyclomatic Path Coverage Report
-      
+
       Feature: User Registration
       ├── Paths: 13/13 covered (100%) ✅
       ├── Edge Cases: 10/10 covered (100%) ✅
       └── Boundaries: 8/8 covered (100%) ✅
-      
+
       Feature: User Login
       ├── Paths: 8/10 covered (80%) ⚠️
       │   └── Missing: PATH-009, PATH-010
       ├── Edge Cases: 5/6 covered (83%) ⚠️
       └── Boundaries: 4/4 covered (100%) ✅
-      
+
       Overall: 95% coverage
-      
+
   - name: "test_matrix"
     command: "sparc sim tests:matrix"
     description: "Test case matrix visualization"
-    
+
     input:
       - "tests/tests.yaml"
-      
+
     output:
       type: "matrix"
       format: "html"
-      
+
     features:
       - "Feature × Test case matrix"
       - "Status indicators"
       - "Priority highlighting"
       - "Filter by status"
-      
+
   - name: "mock_validation"
     command: "sparc sim tests:mocks"
     description: "Validate external service mocks"
-    
+
     input:
       - "tests/mocks/*.yaml"
-      
+
     output:
       type: "validation_report"
       format: "terminal"
-      
+
     features:
       - "Mock completeness check"
       - "Scenario coverage"
@@ -511,19 +927,47 @@ testing:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 interactive:
-  
+
   command: "sparc interactive"
   description: "Full interactive exploration environment"
-  
+
   features:
     - "Dashboard with all simulations"
     - "Cross-linked navigation"
     - "Live spec editing"
     - "Validation on save"
     - "Code generation triggers"
-    
+
   port: 3001
-  
+
+  implementation:
+    framework: "Next.js"
+    ui_library: "shadcn/ui"
+    code_example: |
+      // Dashboard component structure
+      export default function Dashboard() {
+        return (
+          <div className="grid grid-cols-4 gap-4 p-6">
+            <SimulationCard
+              title="Business"
+              items={['Competitive Landscape', 'Pricing', 'Market Sizing']}
+            />
+            <SimulationCard
+              title="Software"
+              items={['Feature Matrix', 'Path Explorer', 'State Machines']}
+            />
+            <SimulationCard
+              title="Technical"
+              items={['Mock Server', 'UI Prototype', 'Database Diagram']}
+            />
+            <SimulationCard
+              title="Testing"
+              items={['Coverage Report', 'Test Matrix']}
+            />
+          </div>
+        );
+      }
+
   sections:
     - name: "Business"
       simulations:
@@ -531,14 +975,14 @@ interactive:
         - "pricing_comparison"
         - "market_sizing"
         - "gtm_timeline"
-        
+
     - name: "Software"
       simulations:
         - "feature_matrix"
         - "path_explorer"
         - "state_machine_viewer"
         - "api_explorer"
-        
+
     - name: "Technical"
       simulations:
         - "mock_server"
@@ -546,14 +990,14 @@ interactive:
         - "database_diagram"
         - "architecture_diagram"
         - "cost_estimation"
-        
+
     - name: "Platform"
       condition: "architecture.type == 'platform'"
       simulations:
         - "service_map"
         - "auth_flows"
         - "event_flow"
-        
+
     - name: "Testing"
       simulations:
         - "coverage_report"
@@ -565,37 +1009,210 @@ interactive:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 validate:
-  
+
   command: "sparc validate"
   description: "Validate all specifications for completeness"
-  
+
+  implementation:
+    code_example: |
+      // src/validation/validator.ts
+      import Ajv from 'ajv';
+      import { glob } from 'glob';
+      import { loadYaml } from '../utils';
+
+      export class Validator {
+        private ajv: Ajv;
+
+        constructor() {
+          this.ajv = new Ajv({ allErrors: true, strict: false });
+          this.loadSchemas();
+        }
+
+        private async loadSchemas() {
+          const schemaFiles = await glob('schemas/json-schemas/*.schema.json');
+          for (const file of schemaFiles) {
+            const schema = await loadYaml(file);
+            this.ajv.addSchema(schema);
+          }
+        }
+
+        async validate(fix: boolean = false): Promise<ValidationResult> {
+          const results: CheckResult[] = [];
+
+          // 1. Schema validation
+          results.push(await this.validateSchemas());
+
+          // 2. Cross-reference validation
+          results.push(await this.validateCrossReferences());
+
+          // 3. Path completeness
+          results.push(await this.validatePathCompleteness());
+
+          // 4. Test coverage
+          results.push(await this.validateTestCoverage());
+
+          // 5. DSL consistency
+          results.push(await this.validateDSLConsistency());
+
+          return {
+            success: results.every(r => r.passed),
+            results
+          };
+        }
+
+        private async validateSchemas(): Promise<CheckResult> {
+          const files = await glob('**/*.yaml', { ignore: 'node_modules/**' });
+          const errors: string[] = [];
+
+          for (const file of files) {
+            const content = await loadYaml(file);
+            if (content.$schema) {
+              const validate = this.ajv.getSchema(content.$schema);
+              if (validate && !validate(content)) {
+                errors.push(`${file}: ${this.ajv.errorsText(validate.errors)}`);
+              }
+            }
+          }
+
+          return {
+            name: 'Schema validation',
+            passed: errors.length === 0,
+            errors
+          };
+        }
+      }
+
   checks:
     - name: "Schema validation"
       description: "All YAML files match their schemas"
-      
+
     - name: "Cross-reference validation"
       description: "All references between files are valid"
-      
+
     - name: "Path completeness"
       description: "All features have complete cyclomatic paths"
-      
+
     - name: "Test coverage"
       description: "All paths have corresponding tests"
-      
+
     - name: "DSL consistency"
       description: "DSL files are internally consistent"
-      
+
   output:
     format: "terminal"
-    
+
     example: |
       $ sparc validate
-      
+
       ✅ Schema validation passed
       ✅ Cross-reference validation passed
       ✅ Path completeness passed (147 paths across 12 features)
       ⚠️ Test coverage: 142/147 paths covered (97%)
          Missing: login/PATH-009, login/PATH-010, payment/PATH-015
       ✅ DSL consistency passed
-      
+
       Overall: 4/5 checks passed
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CODE GENERATION COMMAND
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generate:
+
+  command: "sparc generate <target>"
+  description: "Generate code from DSL specifications"
+
+  targets:
+    - name: "all"
+      description: "Generate all targets"
+
+    - name: "api"
+      description: "Generate API routes and OpenAPI spec"
+      input: "dsl/api.yaml"
+      outputs:
+        - "src/routes/**/*.ts"
+        - "openapi.yaml"
+
+    - name: "db"
+      description: "Generate database schema and migrations"
+      input: "dsl/data.yaml"
+      outputs:
+        - "src/db/schema.ts"
+        - "migrations/*.sql"
+
+    - name: "ui"
+      description: "Generate UI components"
+      input: "dsl/ui.yaml"
+      outputs:
+        - "src/components/**/*.tsx"
+
+    - name: "tests"
+      description: "Generate test scaffolding"
+      input: "tests/tests.yaml"
+      outputs:
+        - "tests/**/*.test.ts"
+
+  implementation:
+    code_example: |
+      // src/generation/generator.ts
+      import Handlebars from 'handlebars';
+      import { loadYaml, writeFile } from '../utils';
+
+      export class Generator {
+        private templates: Map<string, HandlebarsTemplateDelegate>;
+
+        constructor() {
+          this.templates = new Map();
+          this.registerHelpers();
+        }
+
+        private registerHelpers() {
+          Handlebars.registerHelper('pascal', (str) =>
+            str.replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
+               .replace(/^\w/, c => c.toUpperCase())
+          );
+
+          Handlebars.registerHelper('snake', (str) =>
+            str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+          );
+
+          Handlebars.registerHelper('kebab', (str) =>
+            str.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '')
+          );
+        }
+
+        async generate(target: string, outputDir?: string) {
+          const config = await loadYaml('package.yaml');
+          const interpreter = config.interpreters[target];
+
+          for (const targetConfig of interpreter) {
+            const template = await this.loadTemplate(targetConfig.template);
+            const input = await loadYaml(config.contents.dsl[target].file);
+
+            const output = template(input);
+            await writeFile(targetConfig.output, output);
+          }
+        }
+      }
+
+  example_usage: |
+    $ sparc generate api
+
+    🔨 Generating API routes...
+
+    Generated:
+    ├── src/routes/auth.ts (12 endpoints)
+    ├── src/routes/notifications.ts (8 endpoints)
+    ├── src/routes/users.ts (6 endpoints)
+    └── openapi.yaml
+
+    $ sparc generate all
+
+    🔨 Generating all targets...
+
+    Generated:
+    ├── Database schema (5 tables)
+    ├── API routes (26 endpoints)
+    ├── UI components (15 components)
+    ├── Test scaffolding (45 test cases)
+    └── OpenAPI spec

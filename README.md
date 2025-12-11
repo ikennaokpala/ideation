@@ -1264,6 +1264,32 @@ standalone_deployment:
 
 ## Code Generation
 
+SPARC v6.1 DSLs are designed to be machine-readable blueprints that generate production code. This section documents how each DSL maps to generated code.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SPARC DSL Files                            │
+├─────────┬─────────┬─────────┬─────────┬─────────┬──────────────┤
+│ data    │ ui      │ logic   │ api     │ auth    │ deploy       │
+│ .yaml   │ .yaml   │ .yaml   │ .yaml   │ .yaml   │ .yaml        │
+└────┬────┴────┬────┴────┬────┴────┬────┴────┬────┴──────┬───────┘
+     │         │         │         │         │           │
+     ▼         ▼         ▼         ▼         ▼           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Code Generator (Handlebars)                  │
+│  Templates: templates/{target}/{dsl}/*.hbs                      │
+└─────────────────────────────────────────────────────────────────┘
+     │         │         │         │         │           │
+     ▼         ▼         ▼         ▼         ▼           ▼
+┌─────────┬─────────┬─────────┬─────────┬─────────┬──────────────┤
+│ SQL     │ React   │ XState  │ Hono    │ JWT     │ Terraform    │
+│ Drizzle │ Vue     │ Zod     │ OpenAPI │ OAuth   │ Kubernetes   │
+│ Prisma  │ Stories │ Services│ SDK     │ OTP     │ Docker       │
+└─────────┴─────────┴─────────┴─────────┴─────────┴──────────────┘
+```
+
 ### Available Interpreters
 
 ```yaml
@@ -1272,34 +1298,34 @@ interpreters:
     - drizzle      # → src/db/schema.ts
     - prisma       # → prisma/schema.prisma
     - migrations   # → migrations/*.sql
-    
+
   ui:
     - react        # → src/components/**/*.tsx
     - vue          # → src/components/**/*.vue
     - storybook    # → src/stories/**/*.stories.tsx
-    
+
   logic:
     - services     # → src/services/**/*.ts
     - xstate       # → src/machines/**/*.ts
     - zod          # → src/validations/**/*.ts
-    
+
   api:
     - hono         # → src/routes/**/*.ts
     - express      # → src/routes/**/*.js
     - axum         # → src/routes/**/*.rs
     - openapi      # → openapi.yaml
     - sdk          # → sdk/typescript/src/**/*.ts
-    
+
   auth:
     - middleware   # → src/middleware/auth.ts
     - rbac         # → src/policies/**/*.ts
-    
+
   deploy:
     - terraform    # → infra/terraform/**/*.tf
     - kubernetes   # → infra/k8s/**/*.yaml
     - docker       # → docker-compose.yaml
     - github       # → .github/workflows/**/*.yaml
-    
+
   tests:
     - typescript   # → tests/**/*.test.ts
     - rust         # → tests/**/*_test.rs
@@ -1319,6 +1345,524 @@ sparc generate tests
 # Generate with options
 sparc generate api --target=axum --output=src/
 ```
+
+### DSL-to-Code Mappings
+
+#### data.yaml → Database Code
+
+| DSL Element | Generated Code |
+|-------------|----------------|
+| `entities[].columns` | Table columns with types |
+| `entities[].indexes` | Database indexes |
+| `relationships` | Foreign keys and joins |
+| `enums` | TypeScript/database enums |
+
+**Example Transformation:**
+
+```yaml
+# data.yaml
+entities:
+  - name: "User"
+    table: "users"
+    columns:
+      - name: "id"
+        type: "uuid"
+        primary: true
+      - name: "email"
+        type: "varchar(255)"
+        unique: true
+```
+
+Generates (Drizzle):
+
+```typescript
+// src/db/schema/users.ts
+import { pgTable, uuid, varchar } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+```
+
+#### ui.yaml → Component Code
+
+| DSL Element | Generated Code |
+|-------------|----------------|
+| `components[].props` | TypeScript interface |
+| `components[].styles` | Tailwind classes / CSS |
+| `components[].states` | React state hooks |
+| `components[].slots` | Children / render props |
+| `screens[].route` | Router configuration |
+| `screens[].content` | Page component composition |
+
+**Example Transformation:**
+
+```yaml
+# ui.yaml
+components:
+  - name: "Button"
+    props:
+      - name: "variant"
+        type: "enum"
+        values: ["primary", "secondary", "ghost"]
+        default: "primary"
+      - name: "size"
+        type: "enum"
+        values: ["sm", "md", "lg"]
+        default: "md"
+      - name: "loading"
+        type: "boolean"
+        default: false
+      - name: "onClick"
+        type: "function"
+    styles:
+      base: "inline-flex items-center justify-center font-medium transition-colors"
+      variants:
+        primary: "bg-primary text-white hover:bg-primary/90"
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+        ghost: "hover:bg-accent hover:text-accent-foreground"
+      sizes:
+        sm: "h-8 px-3 text-sm"
+        md: "h-10 px-4"
+        lg: "h-12 px-6 text-lg"
+```
+
+Generates (React):
+
+```tsx
+// src/components/Button.tsx
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+}
+
+const variantStyles = {
+  primary: 'bg-primary text-white hover:bg-primary/90',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  ghost: 'hover:bg-accent hover:text-accent-foreground',
+};
+
+const sizeStyles = {
+  sm: 'h-8 px-3 text-sm',
+  md: 'h-10 px-4',
+  lg: 'h-12 px-6 text-lg',
+};
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', size = 'md', loading = false, className, children, disabled, ...props }, ref) => (
+    <button
+      ref={ref}
+      className={cn(
+        'inline-flex items-center justify-center font-medium transition-colors',
+        variantStyles[variant],
+        sizeStyles[size],
+        className
+      )}
+      disabled={disabled || loading}
+      aria-busy={loading}
+      {...props}
+    >
+      {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
+      {children}
+    </button>
+  )
+);
+
+Button.displayName = 'Button';
+```
+
+#### logic.yaml → Business Logic Code
+
+| DSL Element | Generated Code |
+|-------------|----------------|
+| `workflows[].steps` | Service class methods |
+| `state_machines` | XState machine definitions |
+| `validation_schemas` | Zod validation schemas |
+
+**Example Transformation:**
+
+```yaml
+# logic.yaml
+state_machines:
+  - name: "NotificationState"
+    initial: "pending"
+    states:
+      - name: "pending"
+        description: "Waiting to be sent"
+      - name: "sent"
+        description: "Dispatched to provider"
+      - name: "delivered"
+        description: "Confirmed delivery"
+      - name: "failed"
+        description: "Delivery failed"
+    transitions:
+      - event: "send"
+        from: "pending"
+        to: "sent"
+        action: "dispatchToProvider"
+      - event: "confirm"
+        from: "sent"
+        to: "delivered"
+      - event: "fail"
+        from: ["pending", "sent"]
+        to: "failed"
+        action: "recordFailure"
+```
+
+Generates (XState):
+
+```typescript
+// src/machines/notificationState.ts
+import { createMachine, assign } from 'xstate';
+
+export const notificationStateMachine = createMachine({
+  id: 'notification',
+  initial: 'pending',
+  states: {
+    pending: {
+      on: {
+        SEND: { target: 'sent', actions: 'dispatchToProvider' },
+        FAIL: { target: 'failed', actions: 'recordFailure' },
+      },
+    },
+    sent: {
+      on: {
+        CONFIRM: 'delivered',
+        FAIL: { target: 'failed', actions: 'recordFailure' },
+      },
+    },
+    delivered: { type: 'final' },
+    failed: { type: 'final' },
+  },
+}, {
+  actions: {
+    dispatchToProvider: (context, event) => {
+      // Implementation injected at runtime
+    },
+    recordFailure: (context, event) => {
+      // Implementation injected at runtime
+    },
+  },
+});
+```
+
+#### api.yaml → Route Handlers
+
+| DSL Element | Generated Code |
+|-------------|----------------|
+| `endpoints[].path` | Route path |
+| `endpoints[].method` | HTTP method |
+| `endpoints[].handler` | Handler function reference |
+| `endpoints[].request` | Request validation schema |
+| `endpoints[].responses` | Response types |
+| `endpoints[].rate_limit` | Rate limiting middleware |
+
+**Example Transformation:**
+
+```yaml
+# api.yaml
+endpoints:
+  - path: "/api/v1/auth/otp/request"
+    method: "POST"
+    handler: "auth.requestOtp"
+    auth: false
+    rate_limit:
+      max: 5
+      window: "15m"
+    request:
+      body:
+        email:
+          type: "string"
+          format: "email"
+          required: true
+    responses:
+      200:
+        description: "OTP sent successfully"
+        body:
+          message: "string"
+      400:
+        description: "Invalid email format"
+        body:
+          error: "string"
+          code: "string"
+      429:
+        description: "Rate limit exceeded"
+        body:
+          error: "string"
+          retry_after: "integer"
+```
+
+Generates (Hono):
+
+```typescript
+// src/routes/auth/otp.ts
+import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
+import { rateLimiter } from '@/middleware/rateLimit';
+import { authService } from '@/services/auth';
+
+const requestOtpSchema = z.object({
+  email: z.string().email(),
+});
+
+export const otpRoutes = new Hono()
+  .post(
+    '/request',
+    rateLimiter({ max: 5, window: '15m' }),
+    zValidator('json', requestOtpSchema),
+    async (c) => {
+      const { email } = c.req.valid('json');
+
+      try {
+        await authService.requestOtp(email);
+        return c.json({ message: 'Code sent' }, 200);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return c.json({ error: error.message, code: 'INVALID_EMAIL' }, 400);
+        }
+        throw error;
+      }
+    }
+  );
+```
+
+#### auth.yaml → Authentication Code
+
+| DSL Element | Generated Code |
+|-------------|----------------|
+| `methods.email_otp` | OTP generation/verification |
+| `methods.social.providers` | OAuth client setup |
+| `tokens.jwt` | JWT signing/verification |
+| `sessions` | Session management |
+| `middleware` | Auth middleware functions |
+
+**Example Transformation:**
+
+```yaml
+# auth.yaml
+authentication:
+  passwordless_only: true
+  methods:
+    email_otp:
+      enabled: true
+      config:
+        code_length: 6
+        ttl_seconds: 600
+        max_attempts: 3
+
+tokens:
+  jwt:
+    algorithm: "RS256"
+    issuer: "notifycommons.io"
+  access_token:
+    ttl_seconds: 900
+```
+
+Generates:
+
+```typescript
+// src/services/auth/otp.ts
+import { randomInt } from 'crypto';
+import { redis } from '@/lib/redis';
+import { hashCode, verifyCode } from '@/lib/crypto';
+
+const OTP_CONFIG = {
+  codeLength: 6,
+  ttlSeconds: 600,
+  maxAttempts: 3,
+};
+
+export async function generateOtp(email: string): Promise<string> {
+  const code = randomInt(10 ** (OTP_CONFIG.codeLength - 1), 10 ** OTP_CONFIG.codeLength)
+    .toString();
+
+  const key = `otp:${email}`;
+  await redis.setex(key, OTP_CONFIG.ttlSeconds, JSON.stringify({
+    codeHash: await hashCode(code),
+    attempts: 0,
+    createdAt: Date.now(),
+  }));
+
+  return code;
+}
+
+export async function verifyOtp(email: string, code: string): Promise<boolean> {
+  const key = `otp:${email}`;
+  const data = await redis.get(key);
+
+  if (!data) return false;
+
+  const { codeHash, attempts } = JSON.parse(data);
+
+  if (attempts >= OTP_CONFIG.maxAttempts) {
+    await redis.del(key);
+    throw new Error('MAX_ATTEMPTS_EXCEEDED');
+  }
+
+  const valid = await verifyCode(code, codeHash);
+
+  if (valid) {
+    await redis.del(key);
+    return true;
+  }
+
+  await redis.setex(key, OTP_CONFIG.ttlSeconds, JSON.stringify({
+    codeHash,
+    attempts: attempts + 1,
+    createdAt: Date.now(),
+  }));
+
+  return false;
+}
+```
+
+```typescript
+// src/middleware/auth.ts
+import { jwt } from 'hono/jwt';
+
+export const authMiddleware = jwt({
+  secret: process.env.JWT_PUBLIC_KEY!,
+  alg: 'RS256',
+});
+
+export const optionalAuth = async (c, next) => {
+  const token = c.req.header('Authorization')?.replace('Bearer ', '');
+  if (token) {
+    try {
+      c.set('user', await verifyJwt(token));
+    } catch {
+      // Invalid token, continue without user
+    }
+  }
+  await next();
+};
+```
+
+### Template System
+
+SPARC uses Handlebars templates for code generation. Templates live in `templates/{target}/{dsl}/`.
+
+```
+templates/
+├── react/
+│   ├── ui/
+│   │   ├── component.hbs
+│   │   ├── screen.hbs
+│   │   └── story.hbs
+│   └── logic/
+│       └── service.hbs
+├── hono/
+│   └── api/
+│       ├── route.hbs
+│       └── handler.hbs
+├── drizzle/
+│   └── data/
+│       ├── table.hbs
+│       └── migration.hbs
+└── xstate/
+    └── logic/
+        └── machine.hbs
+```
+
+**Custom Template Example:**
+
+```handlebars
+{{!-- templates/react/ui/component.hbs --}}
+import * as React from 'react';
+{{#if hasStyles}}
+import { cn } from '@/lib/utils';
+{{/if}}
+
+{{> propsInterface}}
+
+export const {{name}} = React.forwardRef<{{elementType}}, {{name}}Props>(
+  ({{ propsDestructure }}, ref) => (
+    <{{element}} ref={ref} {{> classBinding}} {{> propBindings}}>
+      {{#if hasSlots}}
+      {children}
+      {{/if}}
+    </{{element}}>
+  )
+);
+
+{{name}}.displayName = '{{name}}';
+```
+
+### JSON Schema Validation
+
+All DSL files can be validated against JSON Schemas before generation:
+
+```bash
+# Validate all DSL files
+sparc validate
+
+# Validate specific file
+sparc validate schemas/ui.yaml
+
+# Validate with verbose output
+sparc validate --verbose
+```
+
+Schema files are located at `schemas/json-schemas/`:
+
+| DSL | Schema |
+|-----|--------|
+| package.yaml | `package.schema.json` |
+| auth.yaml | `auth.schema.json` |
+| ui.yaml | `ui.schema.json` |
+| data.yaml | `data.schema.json` |
+| api.yaml | `api.schema.json` |
+| logic.yaml | `logic.schema.json` |
+
+### SPARC Lite Mode
+
+For simple projects, SPARC Lite mode skips enterprise features:
+
+```yaml
+# package.yaml
+complexity:
+  mode: "lite"
+
+lite_mode:
+  enabled: true
+  skipped_phases:
+    - "business_competitor_analysis"
+    - "software_competitor_analysis"
+  simplified_files:
+    - name: "spec.yaml"
+      replaces: ["business-ideal.yaml", "software-ideal.yaml"]
+```
+
+**Lite Mode Indicators (auto-detected):**
+- Single user type
+- Single revenue model
+- Under 5 entities
+- No white-label requirement
+- No platform architecture
+
+### Cross-Reference Resolution
+
+DSLs reference each other via `_ref` fields:
+
+```yaml
+# ui.yaml
+screens:
+  - name: "DashboardScreen"
+    data:
+      - name: "notifications"
+        endpoint_ref: "api.yaml#/endpoints/get_notifications"  # Links to api.yaml
+```
+
+The generator resolves these references to ensure consistency and generate proper imports.
 
 ---
 
@@ -1492,7 +2036,39 @@ SPARC v6.1 is for new projects. For existing code, you can:
 
 ## Changelog
 
-### v6.1 (Current)
+### v6.1.1 (Current)
+
+**Schema Consolidation:**
+- Consolidated `auth.yaml` and `auth-passwordless-dsl.yaml` into single canonical schema
+- Added `_redirect` pattern for deprecated files with migration guidance
+- Added `_meta` sections with code generation targets
+
+**SPARC Lite Mode:**
+- Added automatic complexity detection (lite/standard/enterprise)
+- Created simplified workflow for small projects
+- Added `lite_mode` section in `package.yaml` with skipped phases and simplified files
+- Lite indicators: single user type, <5 entities, no white-label
+
+**Runtime Validation:**
+- Created JSON Schema files at `schemas/json-schemas/`
+- `package.schema.json` - validates package.yaml
+- `auth.schema.json` - validates auth.yaml (passwordless enforcement)
+- `ui.schema.json` - validates ui.yaml with code generation mapping
+- Added `$schema` references to DSL files
+
+**Code Generation Documentation:**
+- DSL-to-code mapping tables for all DSLs
+- Handlebars template system documentation
+- Example transformations for data, ui, logic, api, auth DSLs
+- Template directory structure
+
+**CLI Implementation Specification:**
+- Full `sparc` CLI command specification in `simulation/modes.yaml`
+- TypeScript implementation examples for all simulation modes
+- Mock server, path explorer, coverage report implementations
+- Installation and usage instructions
+
+### v6.1
 
 **New Features:**
 - Platform detection (automatic)
