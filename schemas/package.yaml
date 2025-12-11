@@ -81,13 +81,175 @@ complexity:
     reason: ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SPARC LITE MODE
+# PROGRESSIVE COMPLEXITY MODE
+# Addresses scope creep by allowing partial completion of analysis phases
+# ═══════════════════════════════════════════════════════════════════════════════
+
+progressive_mode:
+
+  description: |
+    Progressive mode allows teams to start with minimal analysis and add depth
+    incrementally. This prevents the common problem of abandoning SPARC partway
+    through due to the overwhelming scope of full competitor analysis.
+
+    Benefits:
+    - Start coding faster with basic specs
+    - Add competitor analysis as time permits
+    - Validate assumptions with real users before deep analysis
+    - Reduce risk of superficial "checkbox" analysis
+
+  enabled: true
+
+  # Progression levels - each level unlocks additional capabilities
+  levels:
+
+    - level: 0
+      name: "quick_start"
+      description: "Minimal viable specification - start coding immediately"
+      required_files:
+        - "spec/quick-start.yaml"        # Combined minimal spec
+      optional_files: []
+      unlocks:
+        - "Basic code generation"
+        - "Simple mock server"
+        - "Happy path tests"
+      time_estimate: "30 minutes"
+      validation:
+        - "At least one entity defined"
+        - "At least one endpoint defined"
+        - "Basic happy path exists"
+
+    - level: 1
+      name: "mvp_spec"
+      description: "MVP-ready specification with core features defined"
+      required_files:
+        - "dsl/data.yaml"
+        - "dsl/api.yaml"
+        - "software/ideal/software-ideal.yaml"
+      optional_files:
+        - "dsl/ui.yaml"
+        - "dsl/auth.yaml"
+      unlocks:
+        - "Full code generation"
+        - "Stateful mock server"
+        - "Cyclomatic path tests"
+        - "Database migrations"
+      time_estimate: "2-4 hours"
+      validation:
+        - "All entities have primary keys"
+        - "All endpoints have handlers"
+        - "Core features have PATH-* coverage"
+
+    - level: 2
+      name: "competitive_aware"
+      description: "Add competitive context without exhaustive analysis"
+      required_files:
+        - "All from level 1"
+        - "business/competitors/top-3.yaml"     # Only top 3 competitors
+        - "software/competitors/top-3.yaml"
+      optional_files:
+        - "business/ideal/business-ideal.yaml"
+      unlocks:
+        - "Competitive landscape simulation"
+        - "Feature gap analysis"
+        - "Pricing comparison"
+      time_estimate: "4-8 hours"
+      validation:
+        - "At least 3 competitors analyzed"
+        - "Key differentiators identified"
+
+    - level: 3
+      name: "full_analysis"
+      description: "Complete SPARC specification with exhaustive analysis"
+      required_files:
+        - "All from level 2"
+        - "business/competitors/*.yaml (5-8)"
+        - "software/competitors/*.yaml (5-8)"
+        - "business/ideal/business-ideal.yaml"
+        - "architecture/platform-architecture.yaml"
+      optional_files:
+        - "dsl/deploy.yaml"
+      unlocks:
+        - "All simulations"
+        - "Platform architecture"
+        - "Infrastructure cost estimation"
+        - "Full test coverage validation"
+      time_estimate: "1-2 days"
+      validation:
+        - "5+ competitors analyzed"
+        - "Every feature has complete PATH-* coverage"
+        - "Every feature has EDGE-* cases"
+
+  # Quick start templates for rapid adoption
+  quick_start_templates:
+
+    - name: "crud_api"
+      description: "Simple REST API with CRUD operations"
+      generates:
+        - "spec/quick-start.yaml"
+        - "dsl/data.yaml"
+        - "dsl/api.yaml"
+      command: "sparc init --template crud_api"
+
+    - name: "auth_api"
+      description: "API with authentication (OTP + Social)"
+      generates:
+        - "spec/quick-start.yaml"
+        - "dsl/data.yaml"
+        - "dsl/api.yaml"
+        - "dsl/auth.yaml"
+      command: "sparc init --template auth_api"
+
+    - name: "saas_starter"
+      description: "Multi-tenant SaaS with auth, billing, teams"
+      generates:
+        - "All DSL files"
+        - "Basic software-ideal.yaml"
+      command: "sparc init --template saas_starter"
+
+    - name: "platform_starter"
+      description: "Multi-service platform skeleton"
+      generates:
+        - "All DSL files"
+        - "architecture/platform-architecture.yaml"
+      command: "sparc init --template platform_starter"
+
+  # Upgrade paths between levels
+  upgrade_commands:
+    level_0_to_1: "sparc upgrade --to mvp"
+    level_1_to_2: "sparc upgrade --to competitive"
+    level_2_to_3: "sparc upgrade --to full"
+
+  # Partial analysis support
+  partial_analysis:
+    description: |
+      For competitive analysis phases, you can analyze fewer competitors
+      without losing validation. This prevents superficial "checkbox" analyses.
+
+    minimum_competitors: 3
+    recommended_competitors: 5
+    maximum_competitors: 8
+
+    quality_over_quantity: |
+      It's better to deeply analyze 3 competitors than superficially
+      analyze 8. The validation will accept 3+ competitors if they
+      include the market leader and direct competitors.
+
+    required_competitor_types:
+      - "market_leader"           # Dominant player in the space
+      - "direct_competitor"       # Most similar to your product
+      - "adjacent_player"         # Different approach to same problem
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SPARC LITE MODE (LEGACY - Use progressive_mode.levels[0] instead)
 # Simplified specification for small projects
 # ═══════════════════════════════════════════════════════════════════════════════
 
 lite_mode:
 
   description: |
+    DEPRECATED: Use progressive_mode.levels[0] (quick_start) instead.
+
     SPARC Lite is a streamlined version for simple projects that don't need
     the full competitor analysis and exhaustive path coverage. Use when:
     - Building a quick prototype or MVP
@@ -96,6 +258,8 @@ lite_mode:
     - Learning project or tutorial
 
   enabled: false
+  deprecated: true
+  migration_path: "progressive_mode.levels[0]"
 
   # Lite mode skips these phases
   skipped_phases:
@@ -376,9 +540,9 @@ testing_rules:
 
   mocking:
     allowed:
-      - "OAuth providers (Google, Apple, Facebook, GitHub, Microsoft)"
-      - "Email providers (SendGrid, Postmark, Mailgun, SES)"
-      - "SMS providers (Twilio, MessageBird, Vonage)"
+      - "OAuth providers (Google, Apple, GitHub, Microsoft)"
+      - "Email providers (MailChannels)"
+      - "SMS providers (Twilio)"
       - "Payment providers (Stripe, PayPal)"
       - "Push notification providers (Firebase, APNS)"
       - "External storage (S3, GCS) when accessed as external service"
