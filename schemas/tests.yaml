@@ -204,6 +204,45 @@ philosophy:
           // In teardown
           drop_test_database(&db);
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Test Discipline - HARD RULE
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test_discipline:
+    ignore_tests: false
+    skip_tests: false
+    disable_tests: false
+
+    description: |
+      Do not mark any test as ignored, skipped, or disabled for any reason.
+      If a test is failing and you cannot make it pass, continue thinking
+      differently and find another approach. Tests exist to catch real issues —
+      ignoring them defeats their purpose and hides problems that will surface
+      later in production.
+
+    forbidden_annotations:
+      - "#[ignore]"           # Rust
+      - "@Ignore"             # Java/Kotlin
+      - "@Disabled"           # JUnit 5
+      - "it.skip"             # Jest/Mocha
+      - "describe.skip"       # Jest/Mocha
+      - "test.skip"           # Jest/Vitest
+      - "pytest.mark.skip"    # Python
+      - "@pytest.mark.skip"   # Python
+      - "Skip"                # NUnit
+      - "[Ignore]"            # NUnit
+      - "skipIf"              # Any framework
+      - "xtest"               # Prefix pattern
+      - "xit"                 # Prefix pattern
+
+    when_test_fails: |
+      1. Analyze why the test is failing
+      2. Determine if it's a test issue or implementation issue
+      3. If implementation issue: fix the implementation
+      4. If test issue: fix the test
+      5. If you're stuck: try a different approach entirely
+      6. NEVER mark the test as ignored/skipped
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATABASE CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════

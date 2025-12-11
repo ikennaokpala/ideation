@@ -860,6 +860,9 @@ All tests hit a real database. Isolation via transaction rollback or truncation.
 #### 5. TEST EVERY PATH
 Every PATH-*, EDGE-*, and boundary condition from software-ideal.yaml must have a test.
 
+#### 6. NEVER IGNORE TESTS
+Do not mark any test as ignored, skipped, or disabled for any reason. If a test is failing and you cannot make it pass, continue thinking differently and find another approach. Tests exist to catch real issues — ignoring them defeats their purpose and hides problems that will surface later in production.
+
 ### Test File Structure
 
 ```yaml

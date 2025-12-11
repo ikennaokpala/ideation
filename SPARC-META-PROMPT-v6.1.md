@@ -2341,6 +2341,16 @@ test_philosophy:
   database:
     type: "real_database"
     isolation: "transaction_rollback"
+
+  # 7. NEVER IGNORE TESTS
+  test_discipline:
+    ignore_tests: false
+    skip_tests: false
+    disable_tests: false
+    rule: |
+      Do not mark any test as ignored, skipped, or disabled for any reason.
+      If a test is failing, continue thinking differently and find another approach.
+      Tests exist to catch real issues — ignoring them hides problems that surface in production.
 ```
 
 ---
