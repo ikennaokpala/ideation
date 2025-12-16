@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-run-v1.schema.json",
+  "title": "Simulation run (v1)",
+  "description": "Deterministic simulation run manifest (v1) for auditability and reproducibility.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "simulation_run_id",
+    "random_seed",
+    "profile",
+    "start_time",
+    "step_size_ms",
+    "generator",
+    "parameters"
+  ],
+  "properties": {
+    "schema": { "const": "simulation_run_v1" },
+    "simulation_run_id": { "type": "string", "minLength": 1 },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "tenant_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "random_seed": { "type": "integer" },
+    "profile": { "enum": ["low", "high"] },
+    "start_time": { "type": "string", "format": "date-time" },
+    "step_size_ms": { "type": "integer", "minimum": 1 },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "source_revision"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "source_revision": { "type": "string", "minLength": 1 }
+      }
+    },
+    "parameters": { "type": "object" }
+  },
+  "oneOf": [{ "required": ["tenant_id"] }, { "required": ["tenant_ids"] }]
+}
+

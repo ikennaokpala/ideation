@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-run.schema.json",
+  "title": "Simulation run (alias)",
+  "description": "Unversioned alias pointing to the current simulation run schema.",
+  "allOf": [{ "$ref": "./simulation-run-v1.schema.json" }]
+}
+

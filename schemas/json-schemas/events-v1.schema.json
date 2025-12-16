@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/events-v1.schema.json",
+  "title": "Event envelope (v1)",
+  "description": "Canonical event envelope (v1) for deterministic simulations with guardrail enforcement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "tenant_id",
+    "simulation_run_id",
+    "event_id",
+    "event_type",
+    "event_time",
+    "step_index",
+    "actor",
+    "props"
+  ],
+  "properties": {
+    "schema": { "const": "events_v1" },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "simulation_run_id": { "type": "string", "minLength": 1 },
+    "event_id": { "type": "string", "minLength": 1 },
+    "event_type": { "type": "string", "minLength": 1 },
+    "event_time": { "type": "string", "format": "date-time" },
+    "step_index": { "type": "integer", "minimum": 0 },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "enum": ["org", "user", "system"] },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "props": { "type": "object" },
+    "entity_refs": { "type": "object" },
+    "fidelity": { "enum": ["low", "high"] },
+    "dedupe_key": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+
+    "trace_id": { "type": "string" },
+    "span_id": { "type": "string" },
+    "parent_span_id": { "type": "string" },
+    "parent_event_id": { "type": "string" },
+    "service": { "type": "string" },
+    "operation": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "pattern": "^(request_|span_|queue_|db_|error_)"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["trace_id", "service", "operation"],
+        "anyOf": [
+          { "required": ["parent_span_id"] },
+          { "required": ["parent_event_id"] }
+        ]
+      }
+    }
+  ]
+}
+

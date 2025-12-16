@@ -1983,6 +1983,16 @@ Schema files are located at `schemas/json-schemas/`:
 | api.yaml | `api.schema.json` |
 | logic.yaml | `logic.schema.json` |
 
+### Simulation output contracts
+
+For deterministic, auditable simulations (simulation run manifests + event streams), reuse these
+base schemas:
+
+| Output | Schema |
+|--------|--------|
+| Run manifest | `simulation-run-v1.schema.json` (alias: `simulation-run.schema.json`) |
+| Event envelope | `events-v1.schema.json` (alias: `events.schema.json`) |
+
 ### SPARC Lite Mode
 
 For simple projects, SPARC Lite mode skips enterprise features:
