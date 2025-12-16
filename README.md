@@ -1993,6 +1993,9 @@ base schemas:
 | Run manifest | `simulation-run-v1.schema.json` (alias: `simulation-run.schema.json`) |
 | Event envelope | `events-v1.schema.json` (alias: `events.schema.json`) |
 
+Tooling templates (Sprint 1) for validation/PII/determinism are in:
+- `kits/simulation-output-v1/README.md`
+
 ### SPARC Lite Mode
 
 For simple projects, SPARC Lite mode skips enterprise features:
