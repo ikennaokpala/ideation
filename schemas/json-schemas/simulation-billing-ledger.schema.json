@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-billing-ledger.schema.json",
+  "title": "Simulation billing + ledger contract (alias)",
+  "description": "Unversioned alias pointing to the current billing + ledger contract schema.",
+  "allOf": [{ "$ref": "./simulation-billing-ledger-v1.schema.json" }]
+}
+

@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-vector-graph.schema.json",
+  "title": "Simulation vectors + journey graph contract (alias)",
+  "description": "Unversioned alias pointing to the current vectors + journey graph contract schema.",
+  "allOf": [{ "$ref": "./simulation-vector-graph-v1.schema.json" }]
+}
+

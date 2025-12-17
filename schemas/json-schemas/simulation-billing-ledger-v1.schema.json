@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-billing-ledger-v1.schema.json",
+  "title": "Simulation billing + ledger contract (v1)",
+  "description": "Contract for billing objects and revenue recognition assumptions (Sprint 4).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["$schema", "schema", "version", "assumptions", "plans"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema": { "const": "simulation_billing_ledger_v1" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "assumptions": { "$ref": "#/definitions/assumptions" },
+    "plans": { "type": "array", "items": { "$ref": "#/definitions/plan" }, "minItems": 1 },
+    "event_types": { "type": "array", "items": { "type": "string" } }
+  },
+  "definitions": {
+    "assumptions": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["revenue_recognition"],
+      "properties": {
+        "revenue_recognition": { "type": "string" },
+        "proration": { "type": "string" },
+        "refunds": { "type": "string" },
+        "taxes": { "type": "string" }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["plan_id", "name", "billing_period"],
+      "properties": {
+        "plan_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "billing_period": { "enum": ["month", "year"] },
+        "price_cents": { "type": "integer", "minimum": 0 },
+        "trial_days": { "type": "integer", "minimum": 0 },
+        "limits": { "type": "object" },
+        "features": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
+

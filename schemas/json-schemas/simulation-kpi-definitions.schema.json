@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-kpi-definitions.schema.json",
+  "title": "Simulation KPI definitions (alias)",
+  "description": "Unversioned alias pointing to the current simulation KPI definitions schema.",
+  "allOf": [{ "$ref": "./simulation-kpi-definitions-v1.schema.json" }]
+}
+

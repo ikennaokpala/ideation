@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-observability.schema.json",
+  "title": "Simulation observability contract (alias)",
+  "description": "Unversioned alias pointing to the current observability contract schema.",
+  "allOf": [{ "$ref": "./simulation-observability-v1.schema.json" }]
+}
+

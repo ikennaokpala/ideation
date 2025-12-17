@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-acquisition.schema.json",
+  "title": "Simulation acquisition + CAC contract (alias)",
+  "description": "Unversioned alias pointing to the current acquisition + CAC contract schema.",
+  "allOf": [{ "$ref": "./simulation-acquisition-v1.schema.json" }]
+}
+

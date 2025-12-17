@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-modes.schema.json",
+  "title": "SPARC Simulation Modes Schema",
+  "description": "Schema for `simulation/modes.yaml` describing SPARC interactive simulations and CLI behavior.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["$schema", "version", "cli"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$" },
+    "implementation_status": { "type": "object" },
+    "cli": { "type": "object" },
+    "business": { "type": "object" },
+    "software": { "type": "object" },
+    "technical": { "type": "object" },
+    "platform": { "type": "object" },
+    "testing": { "type": "object" },
+    "interactive": { "type": "object" },
+    "validate": { "type": "object" },
+    "generate": { "type": "object" }
+  }
+}
+

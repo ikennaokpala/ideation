@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sparc-dsl.dev/schemas/simulation-event-taxonomy.schema.json",
+  "title": "Simulation event taxonomy (alias)",
+  "description": "Unversioned alias pointing to the current simulation event taxonomy schema.",
+  "allOf": [{ "$ref": "./simulation-event-taxonomy-v1.schema.json" }]
+}
+
