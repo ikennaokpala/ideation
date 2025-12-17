@@ -1996,6 +1996,15 @@ base schemas:
 Tooling templates (Sprint 1) for validation/PII/determinism are in:
 - `kits/simulation-output-v1/README.md`
 
+Sprint 2+ contract schemas (taxonomy/KPIs/journeys/finance/acquisition/ops/vectors) are in:
+- `schemas/json-schemas/simulation-event-taxonomy-v1.schema.json`
+- `schemas/json-schemas/simulation-kpi-definitions-v1.schema.json`
+- `schemas/json-schemas/simulation-journey-state-machine-v1.schema.json`
+- `schemas/json-schemas/simulation-billing-ledger-v1.schema.json`
+- `schemas/json-schemas/simulation-acquisition-v1.schema.json`
+- `schemas/json-schemas/simulation-observability-v1.schema.json`
+- `schemas/json-schemas/simulation-vector-graph-v1.schema.json`
+
 ### SPARC Lite Mode
 
 For simple projects, SPARC Lite mode skips enterprise features:
@@ -2224,6 +2233,8 @@ SPARC v6.1 is for new projects. For existing code, you can:
 
 ## Changelog
 
+Full release notes: `CHANGELOG.md`.
+
 ### v6.1.1 (Current)
 
 **Progressive Complexity Mode:**
@@ -2256,11 +2267,16 @@ SPARC v6.1 is for new projects. For existing code, you can:
 - Migration path: `progressive_mode.levels[0]`
 
 **Runtime Validation:**
-- Created JSON Schema files at `schemas/json-schemas/`
-- `package.schema.json` - validates package.yaml
-- `auth.schema.json` - validates auth.yaml
-- `ui.schema.json` - validates ui.yaml with code generation mapping
-- Added `$schema` references to DSL files
+- Added JSON Schemas under `schemas/json-schemas/` for core DSLs and templates
+- Core DSLs: `package.schema.json`, `auth.schema.json`, `ui.schema.json`, `data.schema.json`, `api.schema.json`, `logic.schema.json`
+- Templates + configuration: `quick-start.schema.json`, `simulation-modes.schema.json`
+- Added/updated `$schema` references for portable validation (including hosted schema URLs under `https://sparc-dsl.dev/schemas/...`)
+
+**Simulation Output Contracts (Deterministic + Auditable):**
+- Base output schemas: `simulation-run-v1.schema.json` and `events-v1.schema.json` (+ `*.schema.json` aliases)
+- Sprint 1 guardrails: determinism checks, PII scanning, and schema validation scripts under `kits/simulation-output-v1/scripts/`
+- Sprint 2+ contract schemas: event taxonomy, KPI definitions, journey state machine, billing ledger, acquisition, observability, vector graph
+- Copy/paste contract templates under `kits/simulation-output-v1/contracts/`
 
 **Code Generation Documentation:**
 - DSL-to-code mapping tables for all DSLs
