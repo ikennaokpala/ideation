@@ -1,0 +1,29 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-vector-graph-v1.schema.json"
+schema: "simulation_vector_graph_v1"
+version: "1.0"
+vectors:
+  - name: "segment_vectors"
+    dimensions: 32
+    distance_metric: "cosine"
+    hnsw_config:
+      m: 16
+      ef_construction: 200
+    on_disk_payload: true
+    payload_required_fields: ["tenant_id", "simulation_run_id"]
+
+graph:
+  name: "journey_graph"
+  node_types:
+    - type: "journey_state"
+      key_fields: ["tenant_id", "simulation_run_id", "state"]
+      required_fields: ["tenant_id", "simulation_run_id"]
+  edge_types:
+    - type: "transition"
+      from: "journey_state"
+      to: "journey_state"
+      required_fields: ["tenant_id", "simulation_run_id", "event_type"]
+
+query_examples:
+  - "Top churn paths by tenant/run (graph traversal)"
+  - "Segment similarity kNN filtered by tenant/run"
+

@@ -8,6 +8,15 @@ This kit provides copy/paste scripts for Sprint 1 guardrails:
 
 *G3 is enforced only for operational event types (`request_`, `span_`, `queue_`, `db_`, `error_`).
 
+It also includes Sprint 2+ contract templates under `kits/simulation-output-v1/contracts/`:
+
+- Sprint 2: `event-taxonomy_v1.yaml`, `kpi-definitions_v1.yaml`
+- Sprint 3: `journey-state-machine_v1.yaml`
+- Sprint 4: `billing-ledger_v1.yaml`
+- Sprint 5: `acquisition_v1.yaml`
+- Sprint 6: `observability_v1.yaml`
+- Sprint 7: `vector-graph_v1.yaml`
+
 ## Expected file layout (recommended)
 
 - Run manifests: `simulations/runs/*.json` (must match `simulation_run_v1`)
@@ -37,4 +46,3 @@ Copy the scripts from `kits/simulation-output-v1/scripts/` into your project’s
   }
 }
 ```
-

@@ -1,0 +1,21 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-event-taxonomy-v1.schema.json"
+schema: "simulation_event_taxonomy_v1"
+version: "1.0"
+namespace: "domain"
+description: "Define canonical event types and required props; keep stable across profiles."
+events:
+  - event_type: "domain.signup_completed"
+    description: "A user completes signup."
+    actor_types: ["user"]
+    profiles: ["low", "high"]
+    required_props: ["signup_method"]
+    optional_props: ["referrer"]
+    tags: ["lifecycle", "acquisition"]
+
+  - event_type: "domain.churned"
+    description: "An account churns."
+    actor_types: ["org"]
+    profiles: ["low", "high"]
+    required_props: ["churn_reason"]
+    tags: ["lifecycle", "churn"]
+

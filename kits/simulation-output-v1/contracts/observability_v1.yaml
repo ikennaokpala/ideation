@@ -1,0 +1,23 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-observability-v1.schema.json"
+schema: "simulation_observability_v1"
+version: "1.0"
+services:
+  - service: "api"
+    description: "Public API service."
+  - service: "worker"
+    description: "Async jobs and queues."
+
+metrics:
+  - metric_id: "rps"
+    definition: "Requests per second."
+    unit: "rps"
+    window: "1m"
+  - metric_id: "p95_latency_ms"
+    definition: "95th percentile latency for requests."
+    unit: "ms"
+    window: "5m"
+  - metric_id: "error_rate"
+    definition: "Error responses / total requests."
+    unit: "ratio"
+    window: "5m"
+

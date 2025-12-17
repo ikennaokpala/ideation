@@ -1,0 +1,27 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-acquisition-v1.schema.json"
+schema: "simulation_acquisition_v1"
+version: "1.0"
+channels:
+  - channel_id: "organic_search"
+    name: "Organic search"
+  - channel_id: "paid_search"
+    name: "Paid search"
+  - channel_id: "webinar"
+    name: "Webinar"
+
+touchpoint_types:
+  - type: "impression"
+    description: "An ad or message was displayed."
+    event_type: "acq.impression"
+  - type: "click"
+    description: "A user clicked an ad or link."
+    event_type: "acq.click"
+  - type: "demo"
+    description: "A demo was attended."
+    event_type: "acq.demo"
+
+attribution_model:
+  name: "last_touch"
+  description: "Attribute conversion to the most recent touchpoint within lookback window."
+  lookback_days: 30
+

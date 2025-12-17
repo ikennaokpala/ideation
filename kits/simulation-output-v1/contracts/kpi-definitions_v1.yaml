@@ -1,0 +1,23 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-kpi-definitions-v1.schema.json"
+schema: "simulation_kpi_definitions_v1"
+version: "1.0"
+description: "Define KPIs in a way that is stable across fidelity profiles."
+kpis:
+  - kpi_id: "activation_rate"
+    name: "Activation rate"
+    definition: "Activated orgs / signed-up orgs within a fixed window."
+    unit: "ratio"
+    direction: "higher_is_better"
+    stable_across_profiles: true
+    inputs:
+      - event_type: "domain.activation_completed"
+
+  - kpi_id: "churn_rate"
+    name: "Churn rate"
+    definition: "Churned orgs / active orgs over a window."
+    unit: "ratio"
+    direction: "lower_is_better"
+    stable_across_profiles: true
+    inputs:
+      - event_type: "domain.churned"
+

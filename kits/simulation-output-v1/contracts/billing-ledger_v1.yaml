@@ -1,0 +1,31 @@
+$schema: "https://sparc-dsl.dev/schemas/simulation-billing-ledger-v1.schema.json"
+schema: "simulation_billing_ledger_v1"
+version: "1.0"
+currency: "USD"
+assumptions:
+  revenue_recognition: "Straight-line daily recognition across the billing period."
+  proration: "Daily proration on upgrades/downgrades."
+  refunds: "Full or prorated refunds allowed; policy must be explicit."
+
+plans:
+  - plan_id: "free"
+    name: "Free"
+    billing_period: "month"
+    price_cents: 0
+    limits:
+      seats: 1
+
+  - plan_id: "pro"
+    name: "Pro"
+    billing_period: "month"
+    price_cents: 9900
+    trial_days: 14
+    limits:
+      seats: 10
+
+event_types:
+  - "billing.plan_changed"
+  - "billing.invoice_issued"
+  - "billing.payment_succeeded"
+  - "billing.refund_issued"
+
