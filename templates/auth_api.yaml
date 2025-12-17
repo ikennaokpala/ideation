@@ -2,7 +2,7 @@
 # Level 0 - CRUD API with passwordless authentication
 # Run: sparc init --template auth_api
 
-$schema: "../schemas/json-schemas/quick-start.schema.json"
+$schema: "https://sparc-dsl.dev/schemas/quick-start.schema.json"
 template: "auth_api"
 version: "1.0"
 level: 0

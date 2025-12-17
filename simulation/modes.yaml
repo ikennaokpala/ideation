@@ -9,7 +9,7 @@
 # - Estimate infrastructure costs
 # - Validate test coverage
 
-$schema: "../schemas/json-schemas/simulation-modes.schema.json"
+$schema: "https://sparc-dsl.dev/schemas/simulation-modes.schema.json"
 version: "1.1"
 
 # ═══════════════════════════════════════════════════════════════════════════════

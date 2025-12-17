@@ -2,7 +2,7 @@
 # Level 1 - Multi-tenant SaaS with auth, billing, teams
 # Run: sparc init --template saas_starter
 
-$schema: "../schemas/json-schemas/quick-start.schema.json"
+$schema: "https://sparc-dsl.dev/schemas/quick-start.schema.json"
 template: "saas_starter"
 version: "1.0"
 level: 1
